@@ -11,8 +11,8 @@
 #include "main.h"
 #include "tim.h"
 
-//TIM_HandleTypeDef PWM_TIM = htim3;
-TIM_HandleTypeDef DSHOT_TIM = htim1;
+TIM_HandleTypeDef *PWM_TIM = &htim3;
+TIM_HandleTypeDef *DSHOT_TIM = &htim1;
 
 
 #endif /* CONTROLS_INC_CONTROLS_CONSTANTS_HPP_ */
