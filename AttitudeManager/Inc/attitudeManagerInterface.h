@@ -7,8 +7,8 @@
  *      Author: Anthony (Anni) Luo
  */
 
-#ifndef ZP_PROTO_PORT_ATTITUDEMANAGERINTERFACE_H
-#define ZP_PROTO_PORT_ATTITUDEMANAGERINTERFACE_H
+#ifndef ATTITUDE_MANAGER_INTERFACE_H
+#define ATTITUDE_MANAGER_INTERFACE_H
 
 #ifdef __cplusplus
 extern "C" {
@@ -21,4 +21,4 @@ void AttitudeManagerInterfaceExecute(void);
 }
 #endif
 
-#endif //ZP_PROTO_PORT_ATTITUDEMANAGERINTERFACE_H
+#endif //ATTITUDE_MANAGER_INTERFACE_H

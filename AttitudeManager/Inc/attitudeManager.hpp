@@ -7,8 +7,8 @@
  *      Author: Anthony (Anni) Luo
  */
 
-#ifndef ZP_PROTO_PORT_ATTITUDEMANAGER_HPP
-#define ZP_PROTO_PORT_ATTITUDEMANAGER_HPP
+#ifndef ATTITUDE_MANAGER_HPP
+#define ATTITUDE_MANAGER_HPP
 
 #include "attitudeStateManager.hpp"
 #include "../../LaminarOS/Interfaces/Inc/LOS_Link.hpp"
@@ -35,4 +35,4 @@ private:
     attitudeManager();
 };
 
-#endif //ZP_PROTO_PORT_ATTITUDEMANAGER_HPP
+#endif //ATTITUDE_MANAGER_HPP

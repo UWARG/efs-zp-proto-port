@@ -7,8 +7,8 @@
  *      Author: Anthony (Anni) Luo
  */
 
-#ifndef ZP_PROTO_PORT_ATTITUDEDATATYPES_HPP
-#define ZP_PROTO_PORT_ATTITUDEDATATYPES_HPP
+#ifndef ATTITUDE_DATATYPES_HPP
+#define ATTITUDE_DATATYPES_HPP
 
 #include <cstdint>
 
@@ -50,4 +50,4 @@ Commented out for now to allow for just quadcopter channel mapping
 
 // constexpr static uint8_t NUM_PWM_CHANNELS {8};
 
-#endif //ZP_PROTO_PORT_ATTITUDEDATATYPES_HPP
+#endif //ATTITUDE_DATATYPES_HPP

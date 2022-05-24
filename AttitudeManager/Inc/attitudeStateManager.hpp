@@ -7,8 +7,8 @@
  *      Author: Anthony (Anni) Luo
  */
 
-#ifndef ZP_PROTO_PORT_ATTITUDESTATEMANAGER_HPP
-#define ZP_PROTO_PORT_ATTITUDESTATEMANAGER_HPP
+#ifndef ATTITUDE_STATE_MANAGER_HPP
+#define ATTITUDE_STATE_MANAGER_HPP
 
 #include "attitudeManager.hpp"
 
@@ -27,4 +27,4 @@ public:
 
 };
 
-#endif //ZP_PROTO_PORT_ATTITUDESTATEMANAGER_HPP
+#endif //ATTITUDE_STATE_MANAGER_HPP
