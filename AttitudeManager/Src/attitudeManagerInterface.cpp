@@ -14,12 +14,12 @@ attitudeManager *attMng;
 PPMChannel *ppm;
 PWMChannel *pwm;
 
-void AttitudeManagerInterfaceInit(void) {
+void attitudeManagerInterfaceInit(void) {
     ppm = new PPMChannel(MAX_PPM_CHANNELS);
     pwm = new PWMChannel();
     attMng = new attitudeManager(ppm, pwm);
 }
 
-void AttitudeManagerInterfaceExecute(void) {
+void attitudeManagerInterfaceExecute(void) {
     attMng->execute();
 }
