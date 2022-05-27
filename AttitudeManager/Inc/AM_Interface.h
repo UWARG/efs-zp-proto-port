@@ -14,8 +14,8 @@
 extern "C" {
 #endif
 
-void attitudeManagerInterfaceInit(void);
-void attitudeManagerInterfaceExecute(void);
+void AM_interfaceInit(void);
+void AM_interfaceExecute(void);
 
 #ifdef __cplusplus
 }

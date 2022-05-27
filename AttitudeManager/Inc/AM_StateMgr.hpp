@@ -12,18 +12,18 @@
 
 #include "AM.hpp"
 
-class attitudeManager;
+class AttitudeManager;
 
-class attitudeState
+class AttitudeState
 {
 public:
-    virtual void enter(attitudeManager* attitudeMgr) = 0;
-    virtual void execute(attitudeManager* attitudeMgr) = 0;
-    virtual void exit(attitudeManager* attitudeMgr) = 0;
+    virtual void enter(AttitudeManager* attitudeMgr) = 0;
+    virtual void execute(AttitudeManager* attitudeMgr) = 0;
+    virtual void exit(AttitudeManager* attitudeMgr) = 0;
 
-    bool operator==(const attitudeState& rhs) const {return (this == &rhs);}
+    bool operator==(const AttitudeState& rhs) const {return (this == &rhs);}
 
-    virtual ~attitudeState() {}
+    virtual ~AttitudeState() {}
 
 };
 

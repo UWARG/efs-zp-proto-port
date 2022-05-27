@@ -11,18 +11,18 @@
 
 #include "../Inc/AM.hpp"
 
-attitudeManager *attMng;
+AttitudeManager *attMng;
 LOS_Link *link;
 LOS_Actuators *output;
 //PPMChannel *ppm;
 //PWMChannel *pwm;
 
-void attitudeManagerInterfaceInit(void) {
+void AM_interfaceInit(void) {
    link = new LOS_Link(MAX_PPM_CHANNELS);
    output = new LOS_Actuators();
-   attMng = new attitudeManager(link, output);
+   attMng = new AttitudeManager(link, output);
 }
 
-void attitudeManagerInterfaceExecute(void) {
+void AM_interfaceExecute(void) {
    attMng->execute();
 }

@@ -14,26 +14,26 @@
 #include "../../LaminarOS/Interfaces/Inc/LOS_Actuators.hpp"
 #include "AM_StateMgr.hpp"
 
-class attitudeState;
+class AttitudeState;
 
 namespace AttMan {
     // Gives status of attitude manager so we know when it has completed a cycle (its state is FetchInstructionsMode) or entered failure mode
     enum _Attitude_Manager_Cycle_Status {COMPLETED_CYCLE = 0, IN_CYCLE, FAILURE_MODE};
 }
 
-class attitudeManager {
+class AttitudeManager {
 public:
-   attitudeManager(LOS_Link *link, LOS_Actuators *output);
-    inline attitudeState* getCurrentState() const {return currentState;}
+	AttitudeManager(LOS_Link *link, LOS_Actuators *output);
+    inline AttitudeState* getCurrentState() const {return currentState;}
     void execute();
-    void setState(attitudeState& newState);
+    void setState(AttitudeState& newState);
     AttMan::_Attitude_Manager_Cycle_Status getStatus() {return status;}
-   LOS_Link *link;
-   LOS_Actuators *output;
+    LOS_Link *link;
+    LOS_Actuators *output;
 private:
-    attitudeState* currentState;
+    AttitudeState* currentState;
     AttMan::_Attitude_Manager_Cycle_Status status;
-    attitudeManager();
+    AttitudeManager();
 };
 
 #endif //ATTITUDE_MANAGER_HPP

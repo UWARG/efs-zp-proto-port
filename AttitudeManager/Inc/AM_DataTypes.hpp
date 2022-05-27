@@ -22,6 +22,25 @@ typedef struct
 
 } PID_Output_t;
 
+typedef struct {
+    float roll, pitch, yaw; //Degrees. Yaw of 180 is north.
+    float rollRate, pitchRate, yawRate; //Degrees/second
+    float airspeed; //m/s
+    float altitude; //m
+    float rateOfClimb; //m/s
+    long double latitude; //Decimal degrees
+    float latitudeSpeed; //m/s
+    long double longitude; //Decimal degrees
+    float longitudeSpeed; //m/s
+    double track; //Degrees. Track of 0 is north.
+    float groundSpeed; //m/s
+    double heading; //Degrees. Heading of 0 is north.
+} SFOutput_t;
+
+typedef struct Output_Mix_t {
+	float channel[4];
+};
+
 constexpr static uint8_t FRONT_LEFT_MOTOR_CHANNEL {0};
 constexpr static uint8_t FRONT_RIGHT_MOTOR_CHANNEL {1};
 constexpr static uint8_t BACK_LEFT_MOTOR_CHANNEL {2};

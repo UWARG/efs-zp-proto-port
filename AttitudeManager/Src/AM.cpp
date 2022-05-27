@@ -13,7 +13,7 @@
 //    pwm = pwmChannel;
 //}
 
-void attitudeManager::setState(attitudeState &newState) {
+void AttitudeManager::setState(AttitudeState &newState) {
 //    currentState->exit(this);
 //    currentState = &newState;
 //
@@ -29,6 +29,6 @@ void attitudeManager::setState(attitudeState &newState) {
 //    currentState->enter(this);
 }
 
-void attitudeManager::execute() {
+void AttitudeManager::execute() {
 //    currentState->execute(this);
 }
