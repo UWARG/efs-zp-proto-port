@@ -10,7 +10,7 @@
 #ifndef ATTITUDE_STATE_MANAGER_HPP
 #define ATTITUDE_STATE_MANAGER_HPP
 
-#include "attitudeManager.hpp"
+#include "AM.hpp"
 
 class attitudeManager;
 

@@ -10,8 +10,9 @@
 #ifndef ATTITUDE_MANAGER_HPP
 #define ATTITUDE_MANAGER_HPP
 
-#include "attitudeStateManager.hpp"
 #include "../../LaminarOS/Interfaces/Inc/LOS_Link.hpp"
+#include "../../LaminarOS/Interfaces/Inc/LOS_Actuators.hpp"
+#include "AM_StateMgr.hpp"
 
 class attitudeState;
 
@@ -22,13 +23,13 @@ namespace AttMan {
 
 class attitudeManager {
 public:
-    attitudeManager(PPMChannel *ppm, PWMChannel *pwm);
+   attitudeManager(LOS_Link *link, LOS_Actuators *output);
     inline attitudeState* getCurrentState() const {return currentState;}
     void execute();
     void setState(attitudeState& newState);
     AttMan::_Attitude_Manager_Cycle_Status getStatus() {return status;}
-    PPMChannel *ppm;
-    PWMChannel *pwm;
+   LOS_Link *link;
+   LOS_Actuators *output;
 private:
     attitudeState* currentState;
     AttMan::_Attitude_Manager_Cycle_Status status;
