@@ -18,6 +18,7 @@ public:
 	void execute(AttitudeManager *attMgr);
 	void exit(AttitudeManager *attMgr) {(void) attMgr;}
 	static AttitudeState& getInstance();
+	static bool isAutonomous(void) {return FetchInstructionsMode::_is_autonomous;}
 	static Teleop_Instructions_t* getTeleopInstructions(void) {return &_teleop_instructions;}
 private:
 	FetchInstructionsMode() {
@@ -53,7 +54,7 @@ public:
 	void execute(AttitudeManager *attMgr);
 	void exit(AttitudeManager *attMgr) {(void) attMgr;}
 	static AttitudeState& getInstance();
-	static PID_Output_t *GetPIDOutput(void) {return _pid_output;}
+	static PID_Output_t *getPIDOutput(void) {return _pid_output;}
 private:
 	ControlLoopMode() {}
 	ControlLoopMode(const ControlLoopMode& other);

@@ -11,16 +11,17 @@
 #define ATTITUDE_DATATYPES_HPP
 
 #include <cstdint>
+#include "../../Interfaces/Inc/interface_datatypes.hpp"
 
 // Output of the PID module and input to the OutputMixing module
-typedef struct
-{
-    float frontLeftMotorPercent;
-    float frontRightMotorPercent;
-    float backLeftMotorPercent;
-    float backRightMotorPercent;
-
-} PID_Output_t;
+//typedef struct
+//{
+//    float frontLeftMotorPercent;
+//    float frontRightMotorPercent;
+//    float backLeftMotorPercent;
+//    float backRightMotorPercent;
+//
+//} PID_Output_t;
 
 typedef struct {
     float roll, pitch, yaw; //Degrees. Yaw of 180 is north.
