@@ -10,6 +10,7 @@
 
 #include "../../Interfaces/Inc/interface_datatypes.hpp"
 #include "AM_DataTypes.hpp"
+#include "AM_StateMgr.hpp"
 
 class FetchInstructionsMode: public AttitudeState {
 public:
@@ -24,11 +25,11 @@ private:
 	}
 	FetchInstructionsMode(const FetchInstructionsMode &other);
 	FetchInstructionsMode& operator =(const FetchInstructionsMode &other);
-	static bool ReceiveTeleopInstructions(AttitudeManager *attitudeMgr);
+	static bool receiveTeleopInstructions(AttitudeManager *attitudeMgr);
 	static bool isArmed();
 	static Teleop_Instructions_t _teleop_instructions;
 	static bool _is_autonomous;
-	static uint8_t teleop_timeout_count;
+	static uint8_t _teleop_timeout_count;
 };
 
 class SensorFusionMode: public AttitudeState {
@@ -37,7 +38,7 @@ public:
 	void execute(AttitudeManager *attMgr);
 	void exit(AttitudeManager *attMgr) {(void) attMgr;}
 	static AttitudeState& getInstance();
-	static SFOutput_t* GETSFOutput(void) {return &_sf_output;}
+	static SFOutput_t* getSFOutput(void) {return &_sf_output;}
 private:
 	// SensorFusionMode() {SF_Init();} // FIXME: add SF
 	SensorFusionMode(const SensorFusionMode &other);
