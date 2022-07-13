@@ -18,7 +18,7 @@ LOS_Actuators *output;
 //PWMChannel *pwm;
 
 void AM_interfaceInit(void) {
-   link = new LOS_Link(MAX_PPM_CHANNELS);
+   link = new LOS_Link(8);
    output = new LOS_Actuators();
    attMng = new AttitudeManager(link, output);
 }
