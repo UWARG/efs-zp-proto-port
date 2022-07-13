@@ -1,4 +1,4 @@
-#include "../Inc/sensorFusionInterface.hpp"
+#include "../Inc/SF_Interface.hpp"
 #include "../Inc/SensorFusion.hpp"
 
 void SensorFusionInterfaceInit(void) {
