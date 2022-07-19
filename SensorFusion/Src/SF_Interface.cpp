@@ -1,11 +1,11 @@
-#include "../Inc/SF_Interface.hpp"
+#include "../Inc/SF_Interface.h"
+
 #include "../Inc/SensorFusion.hpp"
 
 void SensorFusionInterfaceInit(void) {
     SF_Init();
 }
 
-SFError_t SensorFusionInterfaceExecute(void) {
+void SensorFusionInterfaceExecute(void) {
     SFError_t err = SF_GenerateNewResult();
-    return err;
 }
