@@ -59,4 +59,11 @@ public:
 	static TelemetryState& getInstance();
 };
 
+class FailureMode: public TelemetryState {
+public:
+	void enter(TelemetryManager *telemMgr) {(void) telemMgr;}
+	void execute(TelemetryManager *telemMgr);
+	void exit(TelemetryManager *telemMgr) {(void) telemMgr;}
+	static TelemetryState& getInstance();
+};
 #endif // TM_STATES_HPP
