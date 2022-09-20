@@ -9,6 +9,7 @@
 #include "../Inc/MahonyAHRS.hpp"
 #include <cmath>
 #include "../Inc/MathConstants.hpp"
+//#define TARGET_BUILD
 
 // TODO: switch to interface
 #include "../../LaminarOS/Drivers/Sensors/Inc/imu.hpp"
@@ -73,6 +74,26 @@ constexpr int LAT_DIST = 111133;
 //Maximum covariance before a sensor value is discarded
 const int HIGH_COVAR = 10000;
 
+
+
+//Variables for testing SF
+
+float pitch;
+float roll;
+float yaw;
+float pitchRate;
+float rollRate;
+float yawRate;
+float altitude;
+float rateOfClimb;
+long double latitude;
+float latitudeSpeed;
+long double longitude;
+float longitudeSpeed;
+double track;
+float groundSpeed;
+double heading;
+
 void SF_Init(void)
 {
 #ifdef TARGET_BUILD
@@ -96,12 +117,12 @@ void SF_Init(void)
 
     //Set initial state to be unknown
     for(int i = 0; i < NUM_KALMAN_VALUES; i++) iterData.prevX[0] = 0;
-    iterData.prevP[0] = 100000;
-    iterData.prevP[1] = 0;
-    iterData.prevP[2*NUM_KALMAN_VALUES+2] = 100000;
-    iterData.prevP[3] = 0;
-    iterData.prevP[4*NUM_KALMAN_VALUES+4] = 100000;
-    iterData.prevP[5] = 0;
+    yaw = iterData.prevP[0] = 100000;
+    pitch = iterData.prevP[1] = 0;
+    roll = iterData.prevP[2*NUM_KALMAN_VALUES+2] = 100000;
+    groundSpeed = iterData.prevP[3] = 0;
+    longitudeSpeed = iterData.prevP[4*NUM_KALMAN_VALUES+4] = 100000;
+    rateOfClimb = iterData.prevP[5] = 0;
 }
 
 //Rotates acceleration vector so its direction is no longer relative to the aircrafts's rotation.
@@ -600,21 +621,21 @@ SFError_t SF_GenerateNewResult()
     pathOutput.groundSpeed = 0;
 #endif
 
-    SFOutput.pitch = attitudeOutput.pitch;
-    SFOutput.roll = attitudeOutput.roll;
-    SFOutput.yaw = attitudeOutput.yaw;
-    SFOutput.pitchRate = attitudeOutput.pitchRate;
-    SFOutput.rollRate = attitudeOutput.rollRate;
-    SFOutput.yawRate = attitudeOutput.yawRate;
-    SFOutput.altitude = pathOutput.altitude;
-    SFOutput.rateOfClimb = pathOutput.rateOfClimb;
-    SFOutput.latitude = pathOutput.latitude;
-    SFOutput.latitudeSpeed = pathOutput.latitudeSpeed;
-    SFOutput.longitude = pathOutput.longitude;
-    SFOutput.longitudeSpeed = pathOutput.longitudeSpeed;
-    SFOutput.track = pathOutput.track;
-    SFOutput.groundSpeed = pathOutput.groundSpeed;
-    SFOutput.heading = attitudeOutput.heading;
+    pitch = SFOutput.pitch = attitudeOutput.pitch;
+    roll = SFOutput.roll = attitudeOutput.roll;
+    yaw = SFOutput.yaw = attitudeOutput.yaw;
+    pitchRate = SFOutput.pitchRate = attitudeOutput.pitchRate;
+    rollRate = SFOutput.rollRate = attitudeOutput.rollRate;
+    yawRate = SFOutput.yawRate = attitudeOutput.yawRate;
+    altitude = SFOutput.altitude = pathOutput.altitude;
+    rateOfClimb = SFOutput.rateOfClimb = pathOutput.rateOfClimb;
+    latitude = SFOutput.latitude = pathOutput.latitude;
+    latitudeSpeed = SFOutput.latitudeSpeed = pathOutput.latitudeSpeed;
+    longitude = SFOutput.longitude = pathOutput.longitude;
+    longitudeSpeed = SFOutput.longitudeSpeed = pathOutput.longitudeSpeed;
+    track = SFOutput.track = pathOutput.track;
+    groundSpeed = SFOutput.groundSpeed = pathOutput.groundSpeed;
+    heading = SFOutput.heading = attitudeOutput.heading;
 
     return SFError;
 }
