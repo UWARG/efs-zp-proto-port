@@ -75,24 +75,22 @@ constexpr int LAT_DIST = 111133;
 const int HIGH_COVAR = 10000;
 
 
-
-//Variables for testing SF
-
-float pitch;
-float roll;
-float yaw;
-float pitchRate;
-float rollRate;
-float yawRate;
-float altitude;
-float rateOfClimb;
-long double latitude;
-float latitudeSpeed;
-long double longitude;
-float longitudeSpeed;
-double track;
-float groundSpeed;
+// SF Testing
 double heading;
+float groundSpeed;
+double track;
+float longitudeSpeed;
+long double longitude;
+float latitudeSpeed;
+long double latitude;
+float rateOfClimb;
+float altitude;
+float yawRate;
+float rollrate;
+float pitchRate;
+float yaw;
+float roll;
+float pitch;
 
 void SF_Init(void)
 {
