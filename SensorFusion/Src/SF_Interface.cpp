@@ -9,11 +9,5 @@ void SensorFusionInterfaceInit(void) {
 }
 
 void SensorFusionInterfaceExecute(void) {
-	/*IMUData_t imuData;
-	 IMU *imuObj;
-	 imuObj = &BMX160::getInstance();
-	 imuObj->GetResult(imuData);
-	 */
-
 	SFError_t err = SF_GenerateNewResult();
 }

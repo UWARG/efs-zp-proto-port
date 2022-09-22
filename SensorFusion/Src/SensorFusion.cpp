@@ -55,6 +55,7 @@ struct SFIterationData_t {
 };
 
 //static IMU *imuObj;
+//IMU& testimu = BMX160::getInstance();
 #ifdef AUTOPILOT
 static Gps *gpsObj;
 static Altimeter *altimeterObj;
@@ -109,10 +110,11 @@ void SF_Init(void) {
 #endif
 
 	//imuObj = &BMX160::getInstance();
+    IMU& testimu = BMX160::getInstance();
 
 	//Set initial state to be unknown
 	for (int i = 0; i < NUM_KALMAN_VALUES; i++)
-		iterData.prevX[0] = 0;
+	iterData.prevX[0] = 0;
 	iterData.prevP[0] = 100000;
 	iterData.prevP[1] = 0;
 	iterData.prevP[2 * NUM_KALMAN_VALUES + 2] = 100000;
@@ -536,16 +538,16 @@ SFError_t SF_GetPosition(SFPathOutput_t *Output,
 		iterdata->prevP[i] = newP[i];
 
 	return SFError;
-}
+}//IMU *imuObj;
+//imuObj->GetResult(imuData);
 
 SFError_t SF_GenerateNewResult() {
 	SFError_t SFError;
 	SFError.errorCode = 0;
 
-	//IMUData_t imuData;
 	IMUData_t imuData;
-	IMU *imuObj;
-	imuObj->GetResult(imuData);
+	IMU& imuObj = BMX160::getInstance();
+	imuObj.GetResult(imuData);
 #ifdef AUTOPILOT
     GpsData_t GpsData;
     AltimeterData_t altimeterData;
