@@ -110,7 +110,7 @@ void SF_Init(void) {
 #endif
 
 	//imuObj = &BMX160::getInstance();
-    IMU& testimu = BMX160::getInstance();
+    IMU& imuObj = BMX160::getInstance();
 
 	//Set initial state to be unknown
 	for (int i = 0; i < NUM_KALMAN_VALUES; i++)
@@ -538,8 +538,7 @@ SFError_t SF_GetPosition(SFPathOutput_t *Output,
 		iterdata->prevP[i] = newP[i];
 
 	return SFError;
-}//IMU *imuObj;
-//imuObj->GetResult(imuData);
+}
 
 SFError_t SF_GenerateNewResult() {
 	SFError_t SFError;
@@ -622,7 +621,8 @@ SFError_t SF_GetResult(SFOutput_t *output) {
 IMU_Data_t SF_GetRawIMU() {
 	IMUData_t imuData;
 	//imuObj->GetResult(imuData);
-
+	IMU& imuObj = BMX160::getInstance();
+	imuObj.GetResult(imuData);
 	IMU_Data_t imuOutput;
 
 	std: memcpy(&imuOutput, &imuData, sizeof(IMU_Data_t));
