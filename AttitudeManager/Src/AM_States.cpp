@@ -28,6 +28,7 @@ bool FetchInstructionsMode::_is_autonomous = false;
 uint8_t FetchInstructionsMode::_teleop_timeout_count;
 uint8_t DisarmMode::_arm_disarm_ppm_val;
 uint8_t DisarmMode::_arm_disarm_timeout_count;
+Teleop_Instructions_t FetchInstructionsMode::_teleop_instructions;
 
 /// SCREAMING for temporary definitions
 uint8_t MAX_CHANNEL = 8;
@@ -94,7 +95,18 @@ bool FetchInstructionsMode::isArmed() {
  * SensorFusion Mode
  ********************/
 
-// todo: make this when we actually get SF
+void SensorFusionMode::execute(AttitudeManager *attMgr) {
+    SFError_t _SFError = SF_GetResult(&_sf_output);
+
+    attMgr->setState(ControlLoopMode::getInstance());
+}
+
+AttitudeState& SensorFusionMode::getInstance() {
+
+	static SensorFusionMode singleton;
+    return singleton;
+}
+
 
 /********************
  * ControlLoop Mode
@@ -102,7 +114,7 @@ bool FetchInstructionsMode::isArmed() {
 
 // TODO: uncomment out everything
 
-void ControlLoopMode::execute(AttitudeManager * attMgr) {
+void ControlLoopMode::execute(AttitudeManager* attMgr) {
 	// SFOutput_t *SF_output = sensorFusionMode::getSFOutput();
 
 	PID_Output_t *pid_out = nullptr;
@@ -128,4 +140,19 @@ void OutputMixingMode::execute(AttitudeManager * attMgr) {
 
 	// match types?
 	attMgr->output->set(PIDOutput);
+}
+
+/********************
+ * FatalFailure Mode
+ ********************/
+
+void FatalFailureMode::execute(AttitudeManager* attMgr)
+{
+    attMgr->setState(FatalFailureMode::getInstance());
+}
+
+AttitudeState& FatalFailureMode::getInstance()
+{
+    static FatalFailureMode singleton;
+    return singleton;
 }
