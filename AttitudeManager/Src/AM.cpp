@@ -32,5 +32,5 @@ void AttitudeManager::setState(AttitudeState &newState) {
 }
 
 void AttitudeManager::execute() {
-//    currentState->execute(this);
+    currentState->execute(this);
 }

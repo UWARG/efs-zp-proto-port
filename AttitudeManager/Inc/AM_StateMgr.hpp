@@ -14,16 +14,15 @@
 
 class AttitudeManager;
 
-class AttitudeState
-{
+class AttitudeState {
 public:
-    virtual void enter(AttitudeManager* attitudeMgr) = 0;
-    virtual void execute(AttitudeManager* attitudeMgr) = 0;
-    virtual void exit(AttitudeManager* attitudeMgr) = 0;
+	virtual void enter(AttitudeManager *attitudeMgr) = 0;
+	virtual void execute(AttitudeManager *attitudeMgr) = 0;
+	virtual void exit(AttitudeManager *attitudeMgr) = 0;
 
-    bool operator==(const AttitudeState& rhs) const {return (this == &rhs);}
+	bool operator==(const AttitudeState &rhs) const {return (this == &rhs);}
 
-    virtual ~AttitudeState() {}
+	virtual ~AttitudeState() {}
 
 };
 

@@ -18,11 +18,13 @@ LOS_Actuators *output;
 //PWMChannel *pwm;
 
 void AM_interfaceInit(void) {
-   link = new LOS_Link(8);
-   output = new LOS_Actuators();
-   attMng = new AttitudeManager(link, output);
+	link = new LOS_Link(8);
+	output = new LOS_Actuators();
+	attMng = new AttitudeManager(link, output);
 }
 
 void AM_interfaceExecute(void) {
-   attMng->execute();
+	attMng->execute();
+	//int x = 5;
+	//int y = x + 5;
 }
