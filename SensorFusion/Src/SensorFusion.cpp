@@ -132,11 +132,11 @@ void localToGlobalAccel(SFAttitudeOutput_t *attitudeData, float uAccel[3]) {
 	float q2 = attitudeData->q2;
 	float q3 = attitudeData->q3;
 
-	float rotation[3 * 3] = { 1 - 2 * (q2 * q2 + q3 * q3), 2
-			* (q1 * q2 - q3 * q0), 2 * (q1 * q3 + q2 * q0), 2
-			* (q1 * q2 + q3 * q0), 1 - 2 * (q1 * q1 + q3 * q3), 2
-			* (q2 * q3 - q1 * q0), 2 * (q1 * q3 - q2 * q0), 2
-			* (q2 * q3 + q1 * q0), 1 - 2 * (q1 * q1 + q2 * q2) };
+	float rotation[3 * 3] =
+	{
+			1 - 2 * (q2*q2 + q3*q3), 2 * (q1*q2 - q3*q0),       2 * (q1*q3 + q2*q0),
+			2 * (q1*q2 + q3*q0),     1 - 2 * (q1*q1 + q3*q3),   2 * (q2*q3 - q1*q0),
+			2 * (q1*q3 - q2*q0),     2 * (q2*q3 + q1*q0),       1 - 2 * (q1*q1 + q2*q2) };
 
 	//Convert axes of u vector to agree with quaternion definition.
 	//X is north, Y is east, Z is down.
@@ -239,23 +239,14 @@ SFError_t SF_GetAttitude(SFAttitudeOutput_t *Output, IMUData_t *imudata) {
 #endif
 
 	//Convert quaternion output to angles (in deg)
-	imu_RollAngle = RAD_TO_DEG(
-			atan2f(q0 * q1 + q2 * q3, 0.5f - q1 * q1 - q2 * q2));
+	imu_RollAngle = RAD_TO_DEG(atan2f(q0 * q1 + q2 * q3, 0.5f - q1 * q1 - q2 * q2));
 	imu_PitchAngle = RAD_TO_DEG(asinf(-2.0f * (q1 * q3 - q0 * q2)));
-	imu_YawAngle =
-	RAD_TO_DEG(atan2f(q1 * q2 + q0 * q3, 0.5f - q2 * q2 - q3 * q3)) + 180.0f;
+	imu_YawAngle = RAD_TO_DEG(atan2f(q1 * q2 + q0 * q3, 0.5f - q2 * q2 - q3 * q3)) + 180.0f;
 
 	//Convert rate of change of quaternion to angular velocity (in deg/s)
-	imu_RollRate =
-	RAD_TO_DEG(
-			atan2f(qDiff1 * qDiff2 + qDiff3 * qDiff4,
-					0.5f - qDiff2 * qDiff2 - qDiff3 * qDiff3)) * SF_FREQ;
-	imu_PitchRate =
-	RAD_TO_DEG(asinf(-2.0f * (qDiff2 * qDiff4 - qDiff1 * qDiff3))) * SF_FREQ;
-	imu_YawRate =
-	RAD_TO_DEG(
-			atan2f(qDiff2 * qDiff3 + qDiff1 * qDiff4,
-					0.5f - qDiff3 * qDiff3 - qDiff4 * qDiff4)) * SF_FREQ;
+	imu_RollRate =RAD_TO_DEG(atan2f(qDiff1 * qDiff2 + qDiff3 * qDiff4, 0.5f - qDiff2 * qDiff2 - qDiff3 * qDiff3)) * SF_FREQ;
+	imu_PitchRate = RAD_TO_DEG(asinf(-2.0f * (qDiff2 * qDiff4 - qDiff1 * qDiff3))) * SF_FREQ;
+	imu_YawRate = RAD_TO_DEG(atan2f(qDiff2 * qDiff3 + qDiff1 * qDiff4, 0.5f - qDiff3 * qDiff3 - qDiff4 * qDiff4)) * SF_FREQ;
 
 	//Transfer Fused IMU data into SF Output struct
 	Output->pitch = imu_PitchAngle;
@@ -328,8 +319,15 @@ SFError_t SF_GetPosition(SFPathOutput_t *Output,
 	const int16_t DIM = 6;
 
 	//Maps x to itself, applying any physical relationships between variables.
-	float f[DIM * DIM] = { 1, dt, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, dt, 0,
-			0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, dt, 0, 0, 0, 0, 0, 1 };
+	float f[DIM * DIM] =
+			{
+						1, dt, 0, 0,  0, 0,
+						0, 1,  0, 0,  0, 0,
+						0, 0,  1, dt, 0, 0,
+						0, 0,  0, 1,  0, 0,
+						0, 0,  0, 0,  1, dt,
+						0, 0,  0, 0,  0, 1
+			};
 
 	const int16_t U_DIM = 3;
 
@@ -346,30 +344,51 @@ SFError_t SF_GetPosition(SFPathOutput_t *Output,
 	float ddt = pow(dt, 2) / 2;
 
 	//Maps u to x, incorporating acceleration into the estimate
-	float b[DIM * U_DIM] = { ddt, 0, 0, dt, 0, 0, 0, ddt, 0, 0, dt, 0, 0, 0,
-			ddt, 0, 0, dt };
+	float b[DIM * U_DIM] =
+			{
+					ddt, 0,   0,
+					dt,  0,   0,
+					0,   ddt, 0,
+					0,   dt,  0,
+					0,   0,   ddt,
+					0,   0,   dt
+			};
 
 	//Confidence in the physical relationship prediction performed using f
-	float q[DIM * DIM] = { 5.0, 0, 0, 0, 0, 0, 0, 5.0, 0, 0, 0, 0, 0, 0, 5.0, 0,
-			0, 0, 0, 0, 0, 5.0, 0, 0, 0, 0, 0, 0, 5.0, 0, 0, 0, 0, 0, 0, 5.0 };
+	float q[DIM * DIM] =
+			{
+				5.0, 0,   0,   0,   0,   0,
+				0,   5.0, 0,   0,   0,   0,
+				0,   0,   5.0, 0,   0,   0,
+				0,   0,   0,   5.0, 0,   0,
+				0,   0,   0,   0,   5.0, 0,
+				0,   0,   0,   0,   0,   5.0
+			};
 
 	const int16_t NUM_MEASUREMENTS = 7;
 
 	//Maps sensor data from z to x
-	float h[NUM_MEASUREMENTS * DIM] = { 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0,
-			0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0,
-			0, 0, 0, 0, 0, 1 };
+	float h[NUM_MEASUREMENTS * DIM] =
+			{
+				1, 0, 0, 0, 0, 0,
+				1, 0, 0, 0, 0, 0,
+				0, 0, 1, 0, 0, 0,
+				0, 0, 0, 0, 1, 0,
+				0, 1, 0, 0, 0, 0,
+				0, 0, 0, 1, 0, 0,
+				0, 0, 0, 0, 0, 1
+			};
 	//Force sensors to be completely ignored when the covariance is high
 	if (baroCovar >= HIGH_COVAR) {
 		h[0] = 0;
 	}
 	if (gpsCovar >= HIGH_COVAR) {
 		h[DIM] = 0;
-		h[2 * DIM + 2] = 0;
-		h[3 * DIM + 4] = 0;
-		h[4 * DIM + 1] = 0;
-		h[5 * DIM + 3] = 0;
-		h[6 * DIM + 5] = 0;
+		h[2*DIM + 2] = 0;
+		h[3*DIM + 4] = 0;
+		h[4*DIM + 1] = 0;
+		h[5*DIM + 3] = 0;
+		h[6*DIM + 5] = 0;
 	}
 
 #ifdef AUTOPILOT
@@ -393,15 +412,22 @@ SFError_t SF_GetPosition(SFPathOutput_t *Output,
                     gpsdata->groundSpeed * cos(DEG_TO_RAD(gpsdata->heading)), //North speed
         gpsdata->groundSpeed * sin(DEG_TO_RAD(gpsdata->heading)) //East speed
 #else
-			0, 0,
+			0,
+			0,
 #endif
 			};
 
 	//Defines the confidence to have in each sensor variable
-	float r[NUM_MEASUREMENTS * NUM_MEASUREMENTS] { baroCovar, 0, 0, 0, 0, 0, 0,
-			0, gpsCovar * 100, 0, 0, 0, 0, 0, 0, 0, gpsCovar * 100, 0, 0, 0, 0,
-			0, 0, 0, gpsCovar * 100, 0, 0, 0, 0, 0, 0, 0, HIGH_COVAR, 0, 0, 0,
-			0, 0, 0, 0, gpsCovar, 0, 0, 0, 0, 0, 0, 0, gpsCovar };
+	float r[NUM_MEASUREMENTS * NUM_MEASUREMENTS]
+			{
+				baroCovar, 0,            0,            0,            0,          0,        0,
+			    0,         gpsCovar*100, 0,            0,            0,          0,        0,
+				0,         0,            gpsCovar*100, 0,            0,          0,        0,
+				0,         0,            0,            gpsCovar*100, 0,          0,        0,
+				0,         0,            0,            0,            HIGH_COVAR, 0,        0,
+				0,         0,            0,            0,            0,          gpsCovar, 0,
+				0,         0,            0,            0,            0,          0,        gpsCovar
+			};
 
 	/* Kalman Filter Inner Workings */
 
@@ -419,7 +445,8 @@ SFError_t SF_GetPosition(SFPathOutput_t *Output,
 	float p[DIM * DIM];
 
 	float prevP[DIM * DIM];
-	for (int i = 0; i < DIM * DIM; i++) {
+	for (int i = 0; i < DIM * DIM; i++)
+	{
 		prevP[i] = iterdata->prevP[i];
 	}
 
@@ -429,8 +456,7 @@ SFError_t SF_GetPosition(SFPathOutput_t *Output,
 	float bMultU[DIM * 1];
 	mul(b, u, bMultU, DIM, U_DIM, 1);
 
-	for (int i = 0; i < DIM * 1; i++)
-		x[i] = fMultPrevX[i] + bMultU[i];
+	for (int i = 0; i < DIM * 1; i++) x[i] = fMultPrevX[i] + bMultU[i];
 
 	//Calculate error covariance: p = f*prevP*transpose(f) + q
 
@@ -438,15 +464,13 @@ SFError_t SF_GetPosition(SFPathOutput_t *Output,
 	mul(f, prevP, fMultPrevP, DIM, DIM, DIM);
 
 	float transF[DIM * DIM];
-	for (int i = 0; i < DIM * DIM; i++)
-		transF[i] = f[i];
+	for (int i = 0; i < DIM * DIM; i++) transF[i] = f[i];
 	tran(transF, DIM, DIM);
 
 	float fMultPrevPMultTransF[DIM * DIM];
 	mul(fMultPrevP, transF, fMultPrevPMultTransF, DIM, DIM, DIM);
 
-	for (int i = 0; i < DIM * DIM; i++)
-		p[i] = fMultPrevPMultTransF[i] + q[i];
+	for (int i = 0; i < DIM * DIM; i++) p[i] = fMultPrevPMultTransF[i] + q[i];
 
 	/* Measurement Update */
 
@@ -454,8 +478,7 @@ SFError_t SF_GetPosition(SFPathOutput_t *Output,
 	float k[DIM * NUM_MEASUREMENTS];
 
 	float transH[DIM * NUM_MEASUREMENTS];
-	for (int i = 0; i < NUM_MEASUREMENTS * DIM; i++)
-		transH[i] = h[i];
+	for (int i = 0; i < NUM_MEASUREMENTS * DIM; i++) transH[i] = h[i];
 	tran(transH, NUM_MEASUREMENTS, DIM);
 
 	float pMultTransH[DIM * NUM_MEASUREMENTS];
@@ -465,16 +488,13 @@ SFError_t SF_GetPosition(SFPathOutput_t *Output,
 	mul(h, pMultTransH, hPMultTransH, NUM_MEASUREMENTS, DIM, NUM_MEASUREMENTS);
 
 	float hPMultTransHPlusR[NUM_MEASUREMENTS * NUM_MEASUREMENTS];
-	for (int i = 0; i < NUM_MEASUREMENTS * NUM_MEASUREMENTS; i++)
-		hPMultTransHPlusR[i] = hPMultTransH[i] + r[i];
+	for (int i = 0; i < NUM_MEASUREMENTS * NUM_MEASUREMENTS; i++) hPMultTransHPlusR[i] = hPMultTransH[i] + r[i];
 
 	float hPMultTransHPlusRInv[NUM_MEASUREMENTS * NUM_MEASUREMENTS];
-	for (int i = 0; i < NUM_MEASUREMENTS * NUM_MEASUREMENTS; i++)
-		hPMultTransHPlusRInv[i] = hPMultTransHPlusR[i];
+	for (int i = 0; i < NUM_MEASUREMENTS * NUM_MEASUREMENTS; i++) hPMultTransHPlusRInv[i] = hPMultTransHPlusR[i];
 	inv(hPMultTransHPlusRInv, NUM_MEASUREMENTS);
 
-	mul(pMultTransH, hPMultTransHPlusRInv, k, DIM, NUM_MEASUREMENTS,
-			NUM_MEASUREMENTS);
+	mul(pMultTransH, hPMultTransHPlusRInv, k, DIM, NUM_MEASUREMENTS, NUM_MEASUREMENTS);
 
 	//Update estimate: newX = x + k*(z - h*x)
 
@@ -495,15 +515,21 @@ SFError_t SF_GetPosition(SFPathOutput_t *Output,
 	//Update error covariance: newP = (I - k*h)*p
 
 	//The identity matrix
-	float I[DIM * DIM] = { 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0,
-			0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1 };
+	float I[DIM * DIM] =
+			{
+				1, 0, 0, 0, 0, 0,
+				0, 1, 0, 0, 0, 0,
+				0, 0, 1, 0, 0, 0,
+			    0, 0, 0, 1, 0, 0,
+				0, 0, 0, 0, 1, 0,
+				0, 0, 0, 0, 0, 1
+			};
 
 	float kMultH[DIM * DIM];
 	mul(k, h, kMultH, DIM, NUM_MEASUREMENTS, DIM);
 
 	float IMinKMultH[DIM * DIM];
-	for (int i = 0; i < DIM * DIM; i++)
-		IMinKMultH[i] = I[i] - kMultH[i];
+	for (int i = 0; i < DIM * DIM; i++) IMinKMultH[i] = I[i] - kMultH[i];
 
 	float newP[DIM * DIM];
 	mul(IMinKMultH, p, newP, DIM, DIM, DIM);
@@ -532,10 +558,8 @@ SFError_t SF_GetPosition(SFPathOutput_t *Output,
 	Output->track = track;
 	Output->groundSpeed = groundSpeed;
 
-	for (int i = 0; i < DIM * 1; i++)
-		iterdata->prevX[i] = newX[i];
-	for (int i = 0; i < DIM * DIM; i++)
-		iterdata->prevP[i] = newP[i];
+	for (int i = 0; i < DIM * 1; i++) iterdata->prevX[i] = newX[i];
+	for (int i = 0; i < DIM * DIM; i++) iterdata->prevP[i] = newP[i];
 
 	return SFError;
 }
