@@ -1,14 +1,15 @@
 /*
-* Sensor Fusion Algorithms
-* Madgwick is used for estimating attitude.
-* A custom Kalmann filter is used along with the estimated attitude to estimate position.
-* Author: Lucy Gong, Dhruv Rawat, Anthony Bertnyk, Anthony Luo
-*/
+ * Sensor Fusion Algorithms
+ * Madgwick is used for estimating attitude.
+ * A custom Kalmann filter is used along with the estimated attitude to estimate position.
+ * Author: Lucy Gong, Dhruv Rawat, Anthony Bertnyk, Anthony Luo
+ */
 
 #include "../Inc/SensorFusion.hpp"
 #include "../Inc/MahonyAHRS.hpp"
 #include <cmath>
 #include "../Inc/MathConstants.hpp"
+//#define TARGET_BUILD
 
 // TODO: switch to interface
 #include "../../LaminarOS/Drivers/Sensors/Inc/imu.hpp"
@@ -17,44 +18,44 @@
 #endif
 
 #ifdef __cplusplus
-extern "C"
-{
+extern "C" {
 #endif
 
-    #include "../../CControl/Inc/CControlFunctions.h"
+#include "../../CControl/Inc/CControlFunctions.h"
 
 #ifdef __cplusplus
 }
 #endif
 
 typedef struct {
-    float roll, pitch, yaw; //Degrees. Yaw of 180 is north.
-    float rollRate, pitchRate, yawRate; //Degrees/second
-    float airspeed; //m/s
-    float heading; //Degrees. Heading of 0 is north.
-    float q0, q1, q2, q3; //Quaternion attitude
-} SFAttitudeOutput_t ;
+	float roll, pitch, yaw; //Degrees. Yaw of 180 is north.
+	float rollRate, pitchRate, yawRate; //Degrees/second
+	float airspeed; //m/s
+	float heading; //Degrees. Heading of 0 is north.
+	float q0, q1, q2, q3; //Quaternion attitude
+} SFAttitudeOutput_t;
 
-struct SFPathOutput_t{
+struct SFPathOutput_t {
 
-    float altitude; //m
-    float rateOfClimb; //m/s
-    long double latitude; //Decimal degrees (Autopilot), OR metres from origin (Safety)
-    float latitudeSpeed; //m/s
-    long double longitude; //Decimal degrees (Autopilot), OR metres from origin (Safety)
-    float longitudeSpeed; //m/s
-    double track; //Degrees. Track of 0 is north.
-    float groundSpeed; //m/s
+	float altitude; //m
+	float rateOfClimb; //m/s
+	long double latitude; //Decimal degrees (Autopilot), OR metres from origin (Safety)
+	float latitudeSpeed; //m/s
+	long double longitude; //Decimal degrees (Autopilot), OR metres from origin (Safety)
+	float longitudeSpeed; //m/s
+	double track; //Degrees. Track of 0 is north.
+	float groundSpeed; //m/s
 };
 
 const int NUM_KALMAN_VALUES = 6;
 
-struct SFIterationData_t{
-    float prevX[NUM_KALMAN_VALUES];
-    float prevP[NUM_KALMAN_VALUES*NUM_KALMAN_VALUES];
+struct SFIterationData_t {
+	float prevX[NUM_KALMAN_VALUES];
+	float prevP[NUM_KALMAN_VALUES * NUM_KALMAN_VALUES];
 };
 
-static IMU *imuObj;
+//static IMU *imuObj;
+//IMU& testimu = BMX160::getInstance();
 #ifdef AUTOPILOT
 static Gps *gpsObj;
 static Altimeter *altimeterObj;
@@ -73,8 +74,24 @@ constexpr int LAT_DIST = 111133;
 //Maximum covariance before a sensor value is discarded
 const int HIGH_COVAR = 10000;
 
-void SF_Init(void)
-{
+// SF Testing
+double heading;
+float groundSpeed;
+double track;
+float longitudeSpeed;
+long double longitude;
+float latitudeSpeed;
+long double latitude;
+float rateOfClimb;
+float altitude;
+float yawRate;
+float rollRate;
+float pitchRate;
+float yaw;
+float roll;
+float pitch;
+
+void SF_Init(void) {
 #ifdef TARGET_BUILD
     imuObj = &BMX160::getInstance();
 #ifdef AUTOPILOT
@@ -92,45 +109,45 @@ void SF_Init(void)
 #endif
 #endif
 
-    imuObj = &BMX160::getInstance();
+	//imuObj = &BMX160::getInstance();
+    IMU& imuObj = BMX160::getInstance();
 
-    //Set initial state to be unknown
-    for(int i = 0; i < NUM_KALMAN_VALUES; i++) iterData.prevX[0] = 0;
-    iterData.prevP[0] = 100000;
-    iterData.prevP[1] = 0;
-    iterData.prevP[2*NUM_KALMAN_VALUES+2] = 100000;
-    iterData.prevP[3] = 0;
-    iterData.prevP[4*NUM_KALMAN_VALUES+4] = 100000;
-    iterData.prevP[5] = 0;
+	//Set initial state to be unknown
+	for (int i = 0; i < NUM_KALMAN_VALUES; i++)
+	iterData.prevX[0] = 0;
+	iterData.prevP[0] = 100000;
+	iterData.prevP[1] = 0;
+	iterData.prevP[2 * NUM_KALMAN_VALUES + 2] = 100000;
+	iterData.prevP[3] = 0;
+	iterData.prevP[4 * NUM_KALMAN_VALUES + 4] = 100000;
+	iterData.prevP[5] = 0;
 }
 
 //Rotates acceleration vector so its direction is no longer relative to the aircrafts's rotation.
 //Uses a quaternion-derived rotation matrix:
 //wikipedia.org/wiki/Quaternions_and_spatial_rotation#Using_quaternions_as_rotations
-void localToGlobalAccel(SFAttitudeOutput_t *attitudeData, float uAccel[3])
-{
-    float q0 = attitudeData->q0;
-    float q1 = attitudeData->q1;
-    float q2 = attitudeData->q2;
-    float q3 = attitudeData->q3;
+void localToGlobalAccel(SFAttitudeOutput_t *attitudeData, float uAccel[3]) {
+	float q0 = attitudeData->q0;
+	float q1 = attitudeData->q1;
+	float q2 = attitudeData->q2;
+	float q3 = attitudeData->q3;
 
-    float rotation[3*3] =
-            {
-                    1 - 2 * (q2*q2 + q3*q3),  2 * (q1*q2 - q3*q0),      2 * (q1*q3 + q2*q0),
-                    2 * (q1*q2 + q3*q0),      1 - 2 * (q1*q1 + q3*q3),  2 * (q2*q3 - q1*q0),
-                    2 * (q1*q3 - q2*q0),      2 * (q2*q3 + q1*q0),      1 - 2 * (q1*q1 + q2*q2)
-            };
+	float rotation[3 * 3] = { 1 - 2 * (q2 * q2 + q3 * q3), 2
+			* (q1 * q2 - q3 * q0), 2 * (q1 * q3 + q2 * q0), 2
+			* (q1 * q2 + q3 * q0), 1 - 2 * (q1 * q1 + q3 * q3), 2
+			* (q2 * q3 - q1 * q0), 2 * (q1 * q3 - q2 * q0), 2
+			* (q2 * q3 + q1 * q0), 1 - 2 * (q1 * q1 + q2 * q2) };
 
-    //Convert axes of u vector to agree with quaternion definition.
-    //X is north, Y is east, Z is down.
-    float xyzAccel[3] = {uAccel[1], uAccel[2], -uAccel[0]};
-    float newAccel[3];
-    mul(rotation, xyzAccel, newAccel, 3, 3, 1);
+	//Convert axes of u vector to agree with quaternion definition.
+	//X is north, Y is east, Z is down.
+	float xyzAccel[3] = { uAccel[1], uAccel[2], -uAccel[0] };
+	float newAccel[3];
+	mul(rotation, xyzAccel, newAccel, 3, 3, 1);
 
-    //Convert result to original format of u
-    uAccel[0] = -(newAccel[2] + 9.81);
-    uAccel[1] = newAccel[0];
-    uAccel[2] = newAccel[1];
+	//Convert result to original format of u
+	uAccel[0] = -(newAccel[2] + 9.81);
+	uAccel[1] = newAccel[0];
+	uAccel[2] = newAccel[1];
 }
 
 #ifdef AUTOPILOT
@@ -167,19 +184,19 @@ double * cartesianToGPS(double x, double y){
 
 SFError_t SF_GetAttitude(SFAttitudeOutput_t *Output, IMUData_t *imudata) {
 
-    //Error output
-    SFError_t SFError;
+	//Error output
+	SFError_t SFError;
 
-    SFError.errorCode = 0;
+	SFError.errorCode = 0;
 
-    //IMU integration outputs
-    float imu_RollAngle = 0;
-    float imu_PitchAngle = 0;
-    float imu_YawAngle = 0;
+	//IMU integration outputs
+	float imu_RollAngle = 0;
+	float imu_PitchAngle = 0;
+	float imu_YawAngle = 0;
 
-    float imu_RollRate = 0;
-    float imu_PitchRate = 0;
-    float imu_YawRate = 0;
+	float imu_RollRate = 0;
+	float imu_PitchRate = 0;
+	float imu_YawRate = 0;
 
 #ifdef AUTOPILOT //Safety is not compatible with the old error checking
     //Airspeed checks are temporarily disabled until an airspeed driver is implemented
@@ -217,66 +234,75 @@ SFError_t SF_GetAttitude(SFAttitudeOutput_t *Output, IMUData_t *imudata) {
 
     MahonyAHRSupdate(imudata->gyrx, imudata->gyry, imudata->gyrz, imudata->accx, imudata->accy, imudata->accz, imudata->magx, imudata->magy, imudata->magz);
 #else //Safety does not currently use a magnetometer
-    MahonyAHRSupdateIMU(imudata->gyro_x, imudata->gyro_y, imudata->gyro_z, imudata->accel_x, imudata->accel_y, imudata->accel_z);
+	MahonyAHRSupdateIMU(imudata->gyro_x, imudata->gyro_y, imudata->gyro_z,
+			imudata->accel_x, imudata->accel_y, imudata->accel_z);
 #endif
 
-    //Convert quaternion output to angles (in deg)
-    imu_RollAngle = RAD_TO_DEG(atan2f(q0 * q1 + q2 * q3, 0.5f - q1 * q1 - q2 * q2));
-    imu_PitchAngle = RAD_TO_DEG(asinf(-2.0f * (q1 * q3 - q0 * q2)));
-    imu_YawAngle = RAD_TO_DEG(atan2f(q1 * q2 + q0 * q3, 0.5f - q2 * q2 - q3 * q3)) + 180.0f;
+	//Convert quaternion output to angles (in deg)
+	imu_RollAngle = RAD_TO_DEG(
+			atan2f(q0 * q1 + q2 * q3, 0.5f - q1 * q1 - q2 * q2));
+	imu_PitchAngle = RAD_TO_DEG(asinf(-2.0f * (q1 * q3 - q0 * q2)));
+	imu_YawAngle =
+	RAD_TO_DEG(atan2f(q1 * q2 + q0 * q3, 0.5f - q2 * q2 - q3 * q3)) + 180.0f;
 
+	//Convert rate of change of quaternion to angular velocity (in deg/s)
+	imu_RollRate =
+	RAD_TO_DEG(
+			atan2f(qDiff1 * qDiff2 + qDiff3 * qDiff4,
+					0.5f - qDiff2 * qDiff2 - qDiff3 * qDiff3)) * SF_FREQ;
+	imu_PitchRate =
+	RAD_TO_DEG(asinf(-2.0f * (qDiff2 * qDiff4 - qDiff1 * qDiff3))) * SF_FREQ;
+	imu_YawRate =
+	RAD_TO_DEG(
+			atan2f(qDiff2 * qDiff3 + qDiff1 * qDiff4,
+					0.5f - qDiff3 * qDiff3 - qDiff4 * qDiff4)) * SF_FREQ;
 
-    //Convert rate of change of quaternion to angular velocity (in deg/s)
-    imu_RollRate = RAD_TO_DEG(atan2f(qDiff1 * qDiff2 + qDiff3 * qDiff4, 0.5f - qDiff2 * qDiff2 - qDiff3 * qDiff3)) * SF_FREQ;
-    imu_PitchRate = RAD_TO_DEG(asinf(-2.0f * (qDiff2 * qDiff4 - qDiff1 * qDiff3))) * SF_FREQ;
-    imu_YawRate = RAD_TO_DEG(atan2f(qDiff2 * qDiff3 + qDiff1 * qDiff4, 0.5f - qDiff3 * qDiff3 - qDiff4 * qDiff4)) * SF_FREQ;
+	//Transfer Fused IMU data into SF Output struct
+	Output->pitch = imu_PitchAngle;
+	Output->roll = imu_RollAngle;
+	Output->yaw = imu_YawAngle;
 
-    //Transfer Fused IMU data into SF Output struct
-    Output->pitch = imu_PitchAngle;
-    Output->roll = imu_RollAngle;
-    Output->yaw = imu_YawAngle;
+	float heading = imu_YawAngle + 180;
+	if (heading >= 360)
+		heading -= 360;
+	Output->heading = heading;
 
-    float heading = imu_YawAngle + 180;
-    if (heading >= 360) heading -= 360;
-    Output->heading = heading;
+	Output->pitchRate = imu_PitchRate;
+	Output->rollRate = imu_RollRate;
+	Output->yawRate = imu_YawRate;
 
-    Output->pitchRate = imu_PitchRate;
-    Output->rollRate = imu_RollRate;
-    Output->yawRate = imu_YawRate;
+	Output->q0 = q0;
+	Output->q1 = q1;
+	Output->q2 = q2;
+	Output->q3 = q3;
 
-    Output->q0 = q0;
-    Output->q1 = q1;
-    Output->q2 = q2;
-    Output->q3 = q3;
-
-    return SFError;
+	return SFError;
 }
 
-SFError_t SF_GetPosition(
-        SFPathOutput_t *Output,
+SFError_t SF_GetPosition(SFPathOutput_t *Output,
 #ifdef Autopilot
         AltimeterData_t *altimeterdata, GpsData_t *gpsdata, //Params used not used in Safety
 #endif
-        IMUData_t *imudata, SFAttitudeOutput_t *attitudedata, SFIterationData_t *iterdata)
-{
-    //Error output
-    SFError_t SFError;
-    SFError.errorCode = 0;
+		IMUData_t *imudata, SFAttitudeOutput_t *attitudedata,
+		SFIterationData_t *iterdata) {
+	//Error output
+	SFError_t SFError;
+	SFError.errorCode = 0;
 
-    float freq = SF_FREQ;
-    float dt = 1/freq;
+	float freq = SF_FREQ;
+	float dt = 1 / freq;
 
-    //Set currently unused sensors to zero
+	//Set currently unused sensors to zero
 #ifdef Autopilot
     altimeterdata->altitude = 0;
 #endif
-    imudata->accel_x = 0;
-    imudata->accel_y = 0;
-    imudata->accel_z = 0;
+	imudata->accel_x = 0;
+	imudata->accel_y = 0;
+	imudata->accel_z = 0;
 
-    //Define the covariance of sensors
-    float baroCovar = HIGH_COVAR + 1;
-    float gpsCovar = HIGH_COVAR + 1;
+	//Define the covariance of sensors
+	float baroCovar = HIGH_COVAR + 1;
+	float gpsCovar = HIGH_COVAR + 1;
 
 #ifdef AUTOPILOT
     if(gpsdata->dataIsNew && gpsdata->numSatellites >= 3)
@@ -296,268 +322,231 @@ SFError_t SF_GetPosition(
     }
 #endif
 
-    /* Matrix Definitions */
+	/* Matrix Definitions */
 
-    //Number of variables being estimated (dimension of the state vector x).
-    const int16_t DIM = 6;
+	//Number of variables being estimated (dimension of the state vector x).
+	const int16_t DIM = 6;
 
-    //Maps x to itself, applying any physical relationships between variables.
-    float f[DIM*DIM] =
-            {
-                    1, dt, 0, 0,  0, 0,
-                    0, 1,  0, 0,  0, 0,
-                    0, 0,  1, dt, 0, 0,
-                    0, 0,  0, 1,  0, 0,
-                    0, 0,  0, 0,  1, dt,
-                    0, 0,  0, 0,  0, 1
-            };
+	//Maps x to itself, applying any physical relationships between variables.
+	float f[DIM * DIM] = { 1, dt, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, dt, 0,
+			0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, dt, 0, 0, 0, 0, 0, 1 };
 
-    const int16_t U_DIM = 3;
+	const int16_t U_DIM = 3;
 
-    //Measured XYZ acceleration
-    float u[U_DIM] =
-            {
-                    //TODO: Verify the directions of reported acceleration by the imu
-                    imudata->accel_y, //Vertical acceleration
-                    imudata->accel_x, //Latitudinal acceleration
-                    imudata->accel_z  //Longitudinal acceleration
-            };
-    localToGlobalAccel(attitudedata, u);
+	//Measured XYZ acceleration
+	float u[U_DIM] = {
+	//TODO: Verify the directions of reported acceleration by the imu
+			imudata->accel_y, //Vertical acceleration
+			imudata->accel_x, //Latitudinal acceleration
+			imudata->accel_z  //Longitudinal acceleration
+			};
+	localToGlobalAccel(attitudedata, u);
 
-    //Relationship between distance and acceleration
-    float ddt = pow(dt,2)/2;
+	//Relationship between distance and acceleration
+	float ddt = pow(dt, 2) / 2;
 
-    //Maps u to x, incorporating acceleration into the estimate
-    float b[DIM*U_DIM] =
-            {
-                    ddt, 0,   0,
-                    dt,  0,   0,
-                    0,   ddt, 0,
-                    0,   dt,  0,
-                    0,   0,   ddt,
-                    0,   0,   dt
-            };
+	//Maps u to x, incorporating acceleration into the estimate
+	float b[DIM * U_DIM] = { ddt, 0, 0, dt, 0, 0, 0, ddt, 0, 0, dt, 0, 0, 0,
+			ddt, 0, 0, dt };
 
-    //Confidence in the physical relationship prediction performed using f
-    float q[DIM*DIM]=
-            {
-                    5.0, 0,   0,   0,   0,   0,
-                    0,   5.0, 0,   0,   0,   0,
-                    0,   0,   5.0, 0,   0,   0,
-                    0,   0,   0,   5.0, 0,   0,
-                    0,   0,   0,   0,   5.0, 0,
-                    0,   0,   0,   0,   0,   5.0
-            };
+	//Confidence in the physical relationship prediction performed using f
+	float q[DIM * DIM] = { 5.0, 0, 0, 0, 0, 0, 0, 5.0, 0, 0, 0, 0, 0, 0, 5.0, 0,
+			0, 0, 0, 0, 0, 5.0, 0, 0, 0, 0, 0, 0, 5.0, 0, 0, 0, 0, 0, 0, 5.0 };
 
-    const int16_t NUM_MEASUREMENTS = 7;
+	const int16_t NUM_MEASUREMENTS = 7;
 
-    //Maps sensor data from z to x
-    float h[NUM_MEASUREMENTS*DIM] =
-            {
-                    1, 0, 0, 0, 0, 0,
-                    1, 0, 0, 0, 0, 0,
-                    0, 0, 1, 0, 0, 0,
-                    0, 0, 0, 0, 1, 0,
-                    0, 1, 0, 0, 0, 0,
-                    0, 0, 0, 1, 0, 0,
-                    0, 0, 0, 0, 0, 1
-            };
-    //Force sensors to be completely ignored when the covariance is high
-    if(baroCovar >= HIGH_COVAR){
-        h[0] = 0;
-    }
-    if(gpsCovar >= HIGH_COVAR)
-    {
-        h[DIM] = 0;
-        h[2*DIM+2] = 0;
-        h[3*DIM+4] = 0;
-        h[4*DIM+1] = 0;
-        h[5*DIM+3] = 0;
-        h[6*DIM+5] = 0;
-    }
+	//Maps sensor data from z to x
+	float h[NUM_MEASUREMENTS * DIM] = { 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0,
+			0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0,
+			0, 0, 0, 0, 0, 1 };
+	//Force sensors to be completely ignored when the covariance is high
+	if (baroCovar >= HIGH_COVAR) {
+		h[0] = 0;
+	}
+	if (gpsCovar >= HIGH_COVAR) {
+		h[DIM] = 0;
+		h[2 * DIM + 2] = 0;
+		h[3 * DIM + 4] = 0;
+		h[4 * DIM + 1] = 0;
+		h[5 * DIM + 3] = 0;
+		h[6 * DIM + 5] = 0;
+	}
 
 #ifdef AUTOPILOT
     double * xyPos = gpsToCartesian(gpsdata->latitude, gpsdata->longitude);
 #else
-    double xyPos[2] = {0.0, 0.0}; //Dummy values that should be ignored
+	double xyPos[2] = { 0.0, 0.0 }; //Dummy values that should be ignored
 #endif
 
-    //List of sensor measurements
-    float z[NUM_MEASUREMENTS] =
-            {
+	//List of sensor measurements
+	float z[NUM_MEASUREMENTS] = {
 #ifdef Autopilot
                     altimeterdata->altitude,
         (float) gpsdata->altitude,
 #else //These sensor measurements are not used in Safety
-                    0,
-                    0,
+			0, 0,
 #endif
-                    xyPos[0], //Latitude
-                    xyPos[1], //Longitude
-                    0, //Vertical speed (Currently unused)
+			xyPos[0], //Latitude
+			xyPos[1], //Longitude
+			0, //Vertical speed (Currently unused)
 #ifdef Autopilot
                     gpsdata->groundSpeed * cos(DEG_TO_RAD(gpsdata->heading)), //North speed
         gpsdata->groundSpeed * sin(DEG_TO_RAD(gpsdata->heading)) //East speed
 #else
-                    0,
-                    0,
+			0, 0,
 #endif
-            };
+			};
 
-    //Defines the confidence to have in each sensor variable
-    float r[NUM_MEASUREMENTS*NUM_MEASUREMENTS]
-            {
-                    baroCovar, 0,               0,              0,              0,          0,         0,
-                    0,         gpsCovar*100,    0,              0,              0,          0,         0,
-                    0,         0,               gpsCovar*100,   0,              0,          0,         0,
-                    0,         0,               0,              gpsCovar*100,   0,          0,         0,
-                    0,         0,               0,              0,              HIGH_COVAR, 0,         0,
-                    0,         0,               0,              0,              0,          gpsCovar,  0,
-                    0,         0,               0,              0,              0,          0,         gpsCovar
-            };
+	//Defines the confidence to have in each sensor variable
+	float r[NUM_MEASUREMENTS * NUM_MEASUREMENTS] { baroCovar, 0, 0, 0, 0, 0, 0,
+			0, gpsCovar * 100, 0, 0, 0, 0, 0, 0, 0, gpsCovar * 100, 0, 0, 0, 0,
+			0, 0, 0, gpsCovar * 100, 0, 0, 0, 0, 0, 0, 0, HIGH_COVAR, 0, 0, 0,
+			0, 0, 0, 0, gpsCovar, 0, 0, 0, 0, 0, 0, 0, gpsCovar };
 
+	/* Kalman Filter Inner Workings */
 
-    /* Kalman Filter Inner Workings */
+	/* Time Update */
 
-    /* Time Update */
+	//Calculate estimate: x = f*prevX + b*u
+	//List of variables being tracked and estimated
+	float x[DIM];
 
-    //Calculate estimate: x = f*prevX + b*u
+	float prevX[DIM];
+	for (int i = 0; i < DIM; i++)
+		prevX[i] = iterdata->prevX[i];
 
-    //List of variables being tracked and estimated
-    float x[DIM];
+	//Stores confidence in accuracy of variables of x
+	float p[DIM * DIM];
 
-    float prevX[DIM];
-    for (int i = 0; i < DIM; i++) prevX[i] = iterdata->prevX[i];
+	float prevP[DIM * DIM];
+	for (int i = 0; i < DIM * DIM; i++) {
+		prevP[i] = iterdata->prevP[i];
+	}
 
-    //Stores confidence in accuracy of variables of x
-    float p[DIM*DIM];
+	float fMultPrevX[DIM * 1];
+	mul(f, prevX, fMultPrevX, DIM, DIM, 1);
 
-    float prevP[DIM*DIM];
-    for (int i = 0; i < DIM*DIM; i++)
-    {
-        prevP[i] = iterdata->prevP[i];
-    }
+	float bMultU[DIM * 1];
+	mul(b, u, bMultU, DIM, U_DIM, 1);
 
-    float fMultPrevX[DIM*1];
-    mul(f, prevX, fMultPrevX, DIM, DIM, 1);
+	for (int i = 0; i < DIM * 1; i++)
+		x[i] = fMultPrevX[i] + bMultU[i];
 
-    float bMultU[DIM*1];
-    mul(b, u, bMultU, DIM, U_DIM, 1);
+	//Calculate error covariance: p = f*prevP*transpose(f) + q
 
-    for (int i = 0; i < DIM*1; i++) x[i] = fMultPrevX[i] + bMultU[i];
+	float fMultPrevP[DIM * DIM];
+	mul(f, prevP, fMultPrevP, DIM, DIM, DIM);
 
-    //Calculate error covariance: p = f*prevP*transpose(f) + q
+	float transF[DIM * DIM];
+	for (int i = 0; i < DIM * DIM; i++)
+		transF[i] = f[i];
+	tran(transF, DIM, DIM);
 
-    float fMultPrevP[DIM*DIM];
-    mul(f, prevP, fMultPrevP, DIM, DIM, DIM);
+	float fMultPrevPMultTransF[DIM * DIM];
+	mul(fMultPrevP, transF, fMultPrevPMultTransF, DIM, DIM, DIM);
 
-    float transF[DIM*DIM];
-    for (int i = 0; i < DIM*DIM; i++) transF[i] = f[i];
-    tran(transF, DIM, DIM);
+	for (int i = 0; i < DIM * DIM; i++)
+		p[i] = fMultPrevPMultTransF[i] + q[i];
 
-    float fMultPrevPMultTransF[DIM*DIM];
-    mul(fMultPrevP, transF, fMultPrevPMultTransF, DIM, DIM, DIM);
+	/* Measurement Update */
 
-    for (int i = 0; i < DIM*DIM; i++) p[i] = fMultPrevPMultTransF[i] + q[i];
+	//Calculate Kalman gain: k = p*transpose(h) * (h*p*transpose(h) + r)^-1
+	float k[DIM * NUM_MEASUREMENTS];
 
-    /* Measurement Update */
+	float transH[DIM * NUM_MEASUREMENTS];
+	for (int i = 0; i < NUM_MEASUREMENTS * DIM; i++)
+		transH[i] = h[i];
+	tran(transH, NUM_MEASUREMENTS, DIM);
 
-    //Calculate Kalman gain: k = p*transpose(h) * (h*p*transpose(h) + r)^-1
+	float pMultTransH[DIM * NUM_MEASUREMENTS];
+	mul(p, transH, pMultTransH, DIM, DIM, NUM_MEASUREMENTS);
 
-    float k[DIM*NUM_MEASUREMENTS];
+	float hPMultTransH[NUM_MEASUREMENTS * NUM_MEASUREMENTS];
+	mul(h, pMultTransH, hPMultTransH, NUM_MEASUREMENTS, DIM, NUM_MEASUREMENTS);
 
-    float transH[DIM*NUM_MEASUREMENTS];
-    for (int i = 0; i < NUM_MEASUREMENTS*DIM; i++) transH[i] = h[i];
-    tran(transH, NUM_MEASUREMENTS, DIM);
+	float hPMultTransHPlusR[NUM_MEASUREMENTS * NUM_MEASUREMENTS];
+	for (int i = 0; i < NUM_MEASUREMENTS * NUM_MEASUREMENTS; i++)
+		hPMultTransHPlusR[i] = hPMultTransH[i] + r[i];
 
-    float pMultTransH[DIM*NUM_MEASUREMENTS];
-    mul(p, transH, pMultTransH, DIM, DIM, NUM_MEASUREMENTS);
+	float hPMultTransHPlusRInv[NUM_MEASUREMENTS * NUM_MEASUREMENTS];
+	for (int i = 0; i < NUM_MEASUREMENTS * NUM_MEASUREMENTS; i++)
+		hPMultTransHPlusRInv[i] = hPMultTransHPlusR[i];
+	inv(hPMultTransHPlusRInv, NUM_MEASUREMENTS);
 
-    float hPMultTransH[NUM_MEASUREMENTS*NUM_MEASUREMENTS];
-    mul(h, pMultTransH, hPMultTransH, NUM_MEASUREMENTS, DIM, NUM_MEASUREMENTS);
+	mul(pMultTransH, hPMultTransHPlusRInv, k, DIM, NUM_MEASUREMENTS,
+			NUM_MEASUREMENTS);
 
-    float hPMultTransHPlusR[NUM_MEASUREMENTS*NUM_MEASUREMENTS];
-    for (int i = 0; i < NUM_MEASUREMENTS*NUM_MEASUREMENTS; i++) hPMultTransHPlusR[i] = hPMultTransH[i] + r[i];
+	//Update estimate: newX = x + k*(z - h*x)
 
-    float hPMultTransHPlusRInv[NUM_MEASUREMENTS*NUM_MEASUREMENTS];
-    for (int i = 0; i < NUM_MEASUREMENTS*NUM_MEASUREMENTS; i++) hPMultTransHPlusRInv[i] = hPMultTransHPlusR[i];
-    inv(hPMultTransHPlusRInv, NUM_MEASUREMENTS);
+	float hMultX[NUM_MEASUREMENTS * 1];
+	mul(h, x, hMultX, NUM_MEASUREMENTS, DIM, 1);
 
-    mul(pMultTransH, hPMultTransHPlusRInv, k, DIM, NUM_MEASUREMENTS, NUM_MEASUREMENTS);
+	float zMinHMultX[NUM_MEASUREMENTS * 1];
+	for (int i = 0; i < NUM_MEASUREMENTS * 1; i++)
+		zMinHMultX[i] = z[i] - hMultX[i];
 
-    //Update estimate: newX = x + k*(z - h*x)
+	float kMultZMinHMultX[DIM * 1];
+	mul(k, zMinHMultX, kMultZMinHMultX, DIM, NUM_MEASUREMENTS, 1);
 
-    float hMultX[NUM_MEASUREMENTS*1];
-    mul(h, x, hMultX, NUM_MEASUREMENTS, DIM, 1);
+	float newX[DIM * 1];
+	for (int i = 0; i < DIM * 1; i++)
+		newX[i] = x[i] + kMultZMinHMultX[i];
 
-    float zMinHMultX[NUM_MEASUREMENTS*1];
-    for (int i = 0; i < NUM_MEASUREMENTS*1; i++) zMinHMultX[i] = z[i] - hMultX[i];
+	//Update error covariance: newP = (I - k*h)*p
 
-    float kMultZMinHMultX[DIM*1];
-    mul(k, zMinHMultX, kMultZMinHMultX, DIM, NUM_MEASUREMENTS, 1);
+	//The identity matrix
+	float I[DIM * DIM] = { 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0,
+			0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1 };
 
-    float newX[DIM*1];
-    for (int i = 0; i < DIM*1; i++) newX[i] = x[i] + kMultZMinHMultX[i];
+	float kMultH[DIM * DIM];
+	mul(k, h, kMultH, DIM, NUM_MEASUREMENTS, DIM);
 
-    //Update error covariance: newP = (I - k*h)*p
+	float IMinKMultH[DIM * DIM];
+	for (int i = 0; i < DIM * DIM; i++)
+		IMinKMultH[i] = I[i] - kMultH[i];
 
-    //The identity matrix
-    float I[DIM*DIM] =
-            {
-                    1, 0, 0, 0, 0, 0,
-                    0, 1, 0, 0, 0, 0,
-                    0, 0, 1, 0, 0, 0,
-                    0, 0, 0, 1, 0, 0,
-                    0, 0, 0, 0, 1, 0,
-                    0, 0, 0, 0, 0, 1
-            };
+	float newP[DIM * DIM];
+	mul(IMinKMultH, p, newP, DIM, DIM, DIM);
 
-    float kMultH[DIM*DIM];
-    mul(k, h, kMultH, DIM, NUM_MEASUREMENTS, DIM);
+	/*Output*/
 
-    float IMinKMultH[DIM*DIM];
-    for (int i = 0; i < DIM*DIM; i++) IMinKMultH[i] = I[i] - kMultH[i];
+	float northSpeed = x[3], eastSpeed = x[5];
+	float track = RAD_TO_DEG(atan2(eastSpeed, northSpeed));
+	if (track < 0)
+		track += 360;
 
-    float newP[DIM*DIM];
-    mul(IMinKMultH, p, newP, DIM, DIM, DIM);
-
-
-    /*Output*/
-
-    float northSpeed = x[3], eastSpeed = x[5];
-    float track = RAD_TO_DEG(atan2(eastSpeed, northSpeed));
-    if (track < 0) track += 360;
-
-    float groundSpeed = sqrt(northSpeed*northSpeed + eastSpeed*eastSpeed);
+	float groundSpeed = sqrt(northSpeed * northSpeed + eastSpeed * eastSpeed);
 
 #ifdef AUTOPILOT
     double * latLongOut = cartesianToGPS(x[2], x[4]);
 #else
-    double latLongOut[2] = {x[2], x[4]};
+	double latLongOut[2] = { x[2], x[4] };
 #endif
 
-    Output->altitude = x[0];
-    Output->rateOfClimb = x[1];
-    Output->latitude = latLongOut[0];
-    Output->latitudeSpeed = x[3];
-    Output->longitude = latLongOut[1];
-    Output->longitudeSpeed = x[5];
-    Output->track = track;
-    Output->groundSpeed = groundSpeed;
+	Output->altitude = x[0];
+	Output->rateOfClimb = x[1];
+	Output->latitude = latLongOut[0];
+	Output->latitudeSpeed = x[3];
+	Output->longitude = latLongOut[1];
+	Output->longitudeSpeed = x[5];
+	Output->track = track;
+	Output->groundSpeed = groundSpeed;
 
-    for (int i = 0; i < DIM*1; i++) iterdata->prevX[i] = newX[i];
-    for (int i = 0; i < DIM*DIM; i++) iterdata->prevP[i] = newP[i];
+	for (int i = 0; i < DIM * 1; i++)
+		iterdata->prevX[i] = newX[i];
+	for (int i = 0; i < DIM * DIM; i++)
+		iterdata->prevP[i] = newP[i];
 
-    return SFError;
+	return SFError;
 }
 
-SFError_t SF_GenerateNewResult()
-{
-    SFError_t SFError;
-    SFError.errorCode = 0;
+SFError_t SF_GenerateNewResult() {
+	SFError_t SFError;
+	SFError.errorCode = 0;
 
-    IMUData_t imuData;
-    imuObj->GetResult(imuData);
+	IMUData_t imuData;
+	IMU& imuObj = BMX160::getInstance();
+	imuObj.GetResult(imuData);
 #ifdef AUTOPILOT
     GpsData_t GpsData;
     AltimeterData_t altimeterData;
@@ -577,11 +566,12 @@ SFError_t SF_GenerateNewResult()
     #endif
 #endif
 
-    SFAttitudeOutput_t attitudeOutput;
-    SFPathOutput_t pathOutput;
+	SFAttitudeOutput_t attitudeOutput;
+	SFPathOutput_t pathOutput;
 
-    SFError = SF_GetAttitude(&attitudeOutput, &imuData);
-    if(SFError.errorCode != 0) return SFError;
+	SFError = SF_GetAttitude(&attitudeOutput, &imuData);
+	if (SFError.errorCode != 0)
+		return SFError;
 
 #ifdef AUTOPILOT
     SFError = SF_GetPosition(
@@ -590,55 +580,54 @@ SFError_t SF_GenerateNewResult()
         &imuData, &attitudeOutput, &iterData);
     if(SFError.errorCode != 0) return SFError;
 #else
-    pathOutput.altitude = 0;
-    pathOutput.rateOfClimb = 0;
-    pathOutput.latitude = 0;
-    pathOutput.latitudeSpeed = 0;
-    pathOutput.longitude = 0;
-    pathOutput.longitudeSpeed = 0;
-    pathOutput.track = 0;
-    pathOutput.groundSpeed = 0;
+	pathOutput.altitude = 0;
+	pathOutput.rateOfClimb = 0;
+	pathOutput.latitude = 0;
+	pathOutput.latitudeSpeed = 0;
+	pathOutput.longitude = 0;
+	pathOutput.longitudeSpeed = 0;
+	pathOutput.track = 0;
+	pathOutput.groundSpeed = 0;
 #endif
 
-    SFOutput.pitch = attitudeOutput.pitch;
-    SFOutput.roll = attitudeOutput.roll;
-    SFOutput.yaw = attitudeOutput.yaw;
-    SFOutput.pitchRate = attitudeOutput.pitchRate;
-    SFOutput.rollRate = attitudeOutput.rollRate;
-    SFOutput.yawRate = attitudeOutput.yawRate;
-    SFOutput.altitude = pathOutput.altitude;
-    SFOutput.rateOfClimb = pathOutput.rateOfClimb;
-    SFOutput.latitude = pathOutput.latitude;
-    SFOutput.latitudeSpeed = pathOutput.latitudeSpeed;
-    SFOutput.longitude = pathOutput.longitude;
-    SFOutput.longitudeSpeed = pathOutput.longitudeSpeed;
-    SFOutput.track = pathOutput.track;
-    SFOutput.groundSpeed = pathOutput.groundSpeed;
-    SFOutput.heading = attitudeOutput.heading;
+	SFOutput.pitch = attitudeOutput.pitch;
+	SFOutput.roll = attitudeOutput.roll;
+	SFOutput.yaw = attitudeOutput.yaw;
+	SFOutput.pitchRate = attitudeOutput.pitchRate;
+	SFOutput.rollRate = attitudeOutput.rollRate;
+	SFOutput.yawRate = attitudeOutput.yawRate;
+	SFOutput.altitude = pathOutput.altitude;
+	SFOutput.rateOfClimb = pathOutput.rateOfClimb;
+	SFOutput.latitude = pathOutput.latitude;
+	SFOutput.latitudeSpeed = pathOutput.latitudeSpeed;
+	SFOutput.longitude = pathOutput.longitude;
+	SFOutput.longitudeSpeed = pathOutput.longitudeSpeed;
+	SFOutput.track = pathOutput.track;
+	SFOutput.groundSpeed = pathOutput.groundSpeed;
+	SFOutput.heading = attitudeOutput.heading;
 
-    return SFError;
+	return SFError;
 }
 
-SFError_t SF_GetResult(SFOutput_t *output)
-{
-    SFError_t SFError;
-    SFError.errorCode = 0;
+SFError_t SF_GetResult(SFOutput_t *output) {
+	SFError_t SFError;
+	SFError.errorCode = 0;
 
-    *output = SFOutput;
+	*output = SFOutput;
 
-    return SFError;
+	return SFError;
 }
 
-IMU_Data_t SF_GetRawIMU()
-{
-    IMUData_t imuData;
-    imuObj->GetResult(imuData);
+IMU_Data_t SF_GetRawIMU() {
+	IMUData_t imuData;
+	//imuObj->GetResult(imuData);
+	IMU& imuObj = BMX160::getInstance();
+	imuObj.GetResult(imuData);
+	IMU_Data_t imuOutput;
 
-    IMU_Data_t imuOutput;
+	std: memcpy(&imuOutput, &imuData, sizeof(IMU_Data_t));
 
-    std:memcpy(&imuOutput, &imuData, sizeof(IMU_Data_t));
-
-    return imuOutput;
+	return imuOutput;
 }
 
 #ifdef AUTOPILOT

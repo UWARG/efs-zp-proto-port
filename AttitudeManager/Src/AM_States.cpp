@@ -28,6 +28,7 @@ bool FetchInstructionsMode::_is_autonomous = false;
 uint8_t FetchInstructionsMode::_teleop_timeout_count;
 uint8_t DisarmMode::_arm_disarm_ppm_val;
 uint8_t DisarmMode::_arm_disarm_timeout_count;
+Teleop_Instructions_t FetchInstructionsMode::_teleop_instructions;
 
 /// SCREAMING for temporary definitions
 uint8_t MAX_CHANNEL = 8;
@@ -94,7 +95,18 @@ bool FetchInstructionsMode::isArmed() {
  * SensorFusion Mode
  ********************/
 
-// todo: make this when we actually get SF
+void SensorFusionMode::execute(AttitudeManager *attMgr) {
+    SFError_t _SFError = SF_GetResult(&_sf_output);
+
+    attMgr->setState(ControlLoopMode::getInstance());
+}
+
+AttitudeState& SensorFusionMode::getInstance() {
+
+	static SensorFusionMode singleton;
+    return singleton;
+}
+
 
 /********************
  * ControlLoop Mode
@@ -102,7 +114,7 @@ bool FetchInstructionsMode::isArmed() {
 
 // TODO: uncomment out everything
 
-void ControlLoopMode::execute(AttitudeManager * attMgr) {
+void ControlLoopMode::execute(AttitudeManager* attMgr) {
 	// SFOutput_t *SF_output = sensorFusionMode::getSFOutput();
 
 	PID_Output_t *pid_out = nullptr;
@@ -129,3 +141,104 @@ void OutputMixingMode::execute(AttitudeManager * attMgr) {
 	// match types?
 	attMgr->output->set(PIDOutput);
 }
+
+/********************
+ * FatalFailure Mode
+ ********************/
+
+void FatalFailureMode::execute(AttitudeManager* attMgr)
+{
+    attMgr->setState(FatalFailureMode::getInstance());
+}
+
+AttitudeState& FatalFailureMode::getInstance()
+{
+    static FatalFailureMode singleton;
+    return singleton;
+}
+
+/********************
+ * Disarm Mode
+ ********************/
+
+void DisarmMode::execute(AttitudeManager* attMgr)
+{
+    //setting PWM channel values to lowest "disarm" value
+	/* Code not up to date with current LOS status - TODO
+	attMgr->pwm->set(FRONT_LEFT_MOTOR_CHANNEL, 0);
+	attMgr->pwm->set(FRONT_RIGHT_MOTOR_CHANNEL, 0);
+	attMgr->pwm->set(BACK_LEFT_MOTOR_CHANNEL, 0);
+	attMgr->pwm->set(BACK_RIGHT_MOTOR_CHANNEL, 0);
+
+    const uint8_t TIMEOUT_THRESHOLD = 2; //Max cycles without data until connection is considered broken
+
+    //Get Arm Disarm instruction
+    if(ReceiveArmDisarmInstruction(attMgr))
+    {
+        armDisarmTimeoutCount = 0;
+    }
+    else
+    {
+        if(armDisarmTimeoutCount < TIMEOUT_THRESHOLD)
+            armDisarmTimeoutCount++;
+    }
+*/
+    /*
+        3 possibilities:
+             1. Go into FatalFailureMode bec of timeout
+             2. Go into fetchInstructionsMode bec "Arm" instruction was sent
+             3. Do nothing, stay in the disarm state
+
+    if(armDisarmTimeoutCount > TIMEOUT_THRESHOLD && CommsFailed())
+    {
+        //Abort due to timeout failures
+        attitudeMgr->setState(FatalFailureMode::getInstance());
+        return;
+    }
+    else if (isArmed())
+    {
+        attitudeMgr->setState(fetchInstructionsMode::getInstance());
+    }
+    else
+    {
+        //Do nothing, stay in this state
+        //attitudeMgr->setState(DisarmMode::getInstance());
+    }
+
+*/
+}
+
+AttitudeState& DisarmMode::getInstance()
+{
+    static DisarmMode singleton;
+    return singleton;
+}
+
+bool DisarmMode::ReceieveArmDisarmInstruction(AttitudeManager *attMgr)
+{
+    /* Code not up to date with current LOS status - TODO
+	bool retVal = true;
+    if(attitudeMgr->ppm->is_disconnected(HAL_GetTick()))
+    {
+        retVal = false;
+    }
+
+    _armDisarmPPMValue = attitudeMgr->ppm->get(ARM_DISARM_CHANNEL_INDEX);
+
+    return retVal;
+     */
+}
+
+bool DisarmMode::isArmed()
+{
+    bool retVal = false;
+    /* Code not up to date with current LOS status - TODO
+    if (_armDisarmPPMValue >= MIN_ARM_VALUE)
+    {
+        retVal = true;
+    }
+
+    return retVal;
+	*/
+}
+

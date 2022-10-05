@@ -11,6 +11,7 @@
 #include "../../Interfaces/Inc/interface_datatypes.hpp"
 #include "AM_DataTypes.hpp"
 #include "AM_StateMgr.hpp"
+#include "../../SensorFusion/Inc/SensorFusion.hpp"
 
 class FetchInstructionsMode: public AttitudeState {
 public:
@@ -41,7 +42,7 @@ public:
 	static AttitudeState& getInstance();
 	static SFOutput_t* getSFOutput(void) {return &_sf_output;}
 private:
-	// SensorFusionMode() {SF_Init();} // FIXME: add SF
+	SensorFusionMode() {SF_Init();}
 	SensorFusionMode(const SensorFusionMode &other);
 	SensorFusionMode& operator =(const SensorFusionMode &other);
 	static SFOutput_t _sf_output;
