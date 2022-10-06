@@ -169,43 +169,45 @@ void DisarmMode::execute(AttitudeManager* attMgr)
 	attMgr->pwm->set(FRONT_RIGHT_MOTOR_CHANNEL, 0);
 	attMgr->pwm->set(BACK_LEFT_MOTOR_CHANNEL, 0);
 	attMgr->pwm->set(BACK_RIGHT_MOTOR_CHANNEL, 0);
+*/
+	attMgr->setState(FatalFailureMode::getInstance());
 
     const uint8_t TIMEOUT_THRESHOLD = 2; //Max cycles without data until connection is considered broken
 
     //Get Arm Disarm instruction
-    if(ReceiveArmDisarmInstruction(attMgr))
+    if(ReceieveArmDisarmInstruction(attMgr))
     {
-        armDisarmTimeoutCount = 0;
+        _arm_disarm_timeout_count = 0;
     }
     else
     {
-        if(armDisarmTimeoutCount < TIMEOUT_THRESHOLD)
-            armDisarmTimeoutCount++;
+        if(_arm_disarm_timeout_count < TIMEOUT_THRESHOLD)
+        	_arm_disarm_timeout_count++;
     }
-*/
-    /*
-        3 possibilities:
+
+
+        /* 3 possibilities:
              1. Go into FatalFailureMode bec of timeout
              2. Go into fetchInstructionsMode bec "Arm" instruction was sent
              3. Do nothing, stay in the disarm state
-
-    if(armDisarmTimeoutCount > TIMEOUT_THRESHOLD && CommsFailed())
+        */
+    if(_arm_disarm_timeout_count > TIMEOUT_THRESHOLD ) // && CommsFailed() Add this back
     {
         //Abort due to timeout failures
-        attitudeMgr->setState(FatalFailureMode::getInstance());
+        attMgr->setState(FatalFailureMode::getInstance());
         return;
     }
     else if (isArmed())
     {
-        attitudeMgr->setState(fetchInstructionsMode::getInstance());
+        attMgr->setState(FetchInstructionsMode::getInstance());
     }
     else
     {
         //Do nothing, stay in this state
-        //attitudeMgr->setState(DisarmMode::getInstance());
+        attMgr->setState(DisarmMode::getInstance());
     }
 
-*/
+
 }
 
 AttitudeState& DisarmMode::getInstance()
@@ -216,29 +218,29 @@ AttitudeState& DisarmMode::getInstance()
 
 bool DisarmMode::ReceieveArmDisarmInstruction(AttitudeManager *attMgr)
 {
-    /* Code not up to date with current LOS status - TODO
+    // Code not up to date with current LOS status - TODO
 	bool retVal = true;
-    if(attitudeMgr->ppm->is_disconnected(HAL_GetTick()))
+    //if(attMgr->link->is_disconnected(HAL_GetTick()))
     {
         retVal = false;
     }
 
-    _armDisarmPPMValue = attitudeMgr->ppm->get(ARM_DISARM_CHANNEL_INDEX);
+    _arm_disarm_ppm_val = attMgr->link->get_input(ARM_DISARM_CHANNEL_INDEX);
 
     return retVal;
-     */
+
 }
 
 bool DisarmMode::isArmed()
 {
     bool retVal = false;
-    /* Code not up to date with current LOS status - TODO
-    if (_armDisarmPPMValue >= MIN_ARM_VALUE)
+    // Code not up to date with current LOS status - TODO
+    if (_arm_disarm_ppm_val >= MIN_ARM_VALUE)
     {
         retVal = true;
     }
 
     return retVal;
-	*/
+
 }
 

@@ -74,7 +74,7 @@ constexpr int LAT_DIST = 111133;
 //Maximum covariance before a sensor value is discarded
 const int HIGH_COVAR = 10000;
 
-// SF Testing
+/* SF Testing
 double heading;
 float groundSpeed;
 double track;
@@ -90,7 +90,7 @@ float pitchRate;
 float yaw;
 float roll;
 float pitch;
-
+*/
 void SF_Init(void) {
 #ifdef TARGET_BUILD
     imuObj = &BMX160::getInstance();
