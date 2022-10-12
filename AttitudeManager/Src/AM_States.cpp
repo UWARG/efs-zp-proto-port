@@ -14,9 +14,9 @@
 #include "../../LaminarOS/Interfaces/Inc/LOS_link.hpp"
 #include "../../LaminarOS/Interfaces/Inc/LOS_Actuators.hpp"
 #include "stm32f4xx_hal_gpio.h" // TODO: this should really be removed
-
-#include "../../Controls/Inc/PID.hpp" // does not yet exist.
-
+#include "../../Controls/Inc/PID.hpp"
+#include "../../Drivers/Comms/Inc/RSSI.hpp"
+#include "../../Controls/Inc/Controls.hpp"
 /*
  * Definitions
  */
@@ -26,9 +26,11 @@ PID_Output_t *ControlLoopMode::_pid_output;
 Teleop_Instructions_t *_controls_instructions = new Teleop_Instructions_t();
 bool FetchInstructionsMode::_is_autonomous = false;
 uint8_t FetchInstructionsMode::_teleop_timeout_count;
+uint8_t FetchInstructionsMode::PM_timeout_count;
 uint8_t DisarmMode::_arm_disarm_ppm_val;
 uint8_t DisarmMode::_arm_disarm_timeout_count;
 Teleop_Instructions_t FetchInstructionsMode::_teleop_instructions;
+//PPMChannel *access; // TODO: implement a better way of doing this using LOS_Link
 
 /// SCREAMING for temporary definitions
 uint8_t MAX_CHANNEL = 8;
@@ -39,9 +41,9 @@ uint8_t MIN_ARM_VALUE = 50;
  * Code
  */
 
-/********************
+/************************
  * FetchInstructions Mode
- ********************/
+ ************************/
 
 void FetchInstructionsMode::execute(AttitudeManager * attMgr) {
 	const uint8_t TIMEOUT_THRESH = 2;
@@ -56,11 +58,19 @@ void FetchInstructionsMode::execute(AttitudeManager * attMgr) {
 	}
 
 
-	if (_teleop_timeout_count < TIMEOUT_THRESHOLD) { // todo: add && !commsFailed()
+	if (_teleop_timeout_count < TIMEOUT_THRESHOLD && !CommsFailed()) {
 		FetchInstructionsMode::_is_autonomous = false;
 	} else {
 		// abort due to teleop failure
 		attMgr->setState(FatalFailureMode::getInstance());
+		return;
+
+	//Check if Disarm instruction was sent
+	if (!isArmed()) {
+		attMgr->setState(DisarmMode::getInstance());
+		return;
+	}
+	attMgr->setState(SensorFusionMode::getInstance());
 	}
 }
 
@@ -70,11 +80,15 @@ AttitudeState& FetchInstructionsMode::getInstance() {
 }
 
 bool FetchInstructionsMode::receiveTeleopInstructions(AttitudeManager *attMgr) {
-	bool is_dc{true};
+	//bool is_dc{true};
 
-	if (is_dc) {
+	if(attMgr->link->disconnected(HAL_GetTick())) {
 		return false;
 	}
+
+	/*if (is_dc) {
+		return false;
+	}*/
 
 	for(int i=0; i<MAX_CHANNEL; ++i) {
 		_teleop_instructions.teleop_inp[i] = attMgr->link->get_input(i);
@@ -115,7 +129,7 @@ AttitudeState& SensorFusionMode::getInstance() {
 // TODO: uncomment out everything
 
 void ControlLoopMode::execute(AttitudeManager* attMgr) {
-	// SFOutput_t *SF_output = sensorFusionMode::getSFOutput();
+	 SFOutput_t *SF_output = SensorFusionMode::getSFOutput();
 
 	PID_Output_t *pid_out = nullptr;
 
@@ -123,10 +137,17 @@ void ControlLoopMode::execute(AttitudeManager* attMgr) {
 
 	}else {
 		Teleop_Instructions_t *_teleop_instructions = FetchInstructionsMode::getTeleopInstructions();
-		// _pid_output = runControlsAndGetPWM(_teleop_instructions, SF_output);
+		//_pid_output = runControlsAndGetPWM(_teleop_instructions, SF_output);
 	}
 
 	attMgr->setState(OutputMixingMode::getInstance());
+}
+
+AttitudeState& ControlLoopMode::getInstance(){
+
+	static ControlLoopMode singleton;
+	return singleton;
+
 }
 
 
@@ -140,6 +161,12 @@ void OutputMixingMode::execute(AttitudeManager * attMgr) {
 
 	// match types?
 	attMgr->output->set(PIDOutput);
+}
+
+AttitudeState& OutputMixingMode::getInstance()
+{
+    static OutputMixingMode singleton;
+    return singleton;
 }
 
 /********************
