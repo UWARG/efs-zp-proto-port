@@ -136,6 +136,7 @@ void ControlLoopMode::execute(AttitudeManager* attMgr) {
 	}else {
 		Teleop_Instructions_t *_teleop_instructions = FetchInstructionsMode::getTeleopInstructions();
 		//_pid_output = runControlsAndGetPWM(_teleop_instructions, SF_output);
+		//TODO: fix above
 	}
 
 	attMgr->setState(OutputMixingMode::getInstance());
