@@ -30,7 +30,7 @@ uint8_t FetchInstructionsMode::PM_timeout_count;
 uint8_t DisarmMode::_arm_disarm_ppm_val;
 uint8_t DisarmMode::_arm_disarm_timeout_count;
 Teleop_Instructions_t FetchInstructionsMode::_teleop_instructions;
-//PPMChannel *access; // TODO: implement a better way of doing this using LOS_Link
+
 
 /// SCREAMING for temporary definitions
 uint8_t MAX_CHANNEL = 8;
@@ -124,10 +124,9 @@ AttitudeState& SensorFusionMode::getInstance() {
  * ControlLoop Mode
  ********************/
 
-// TODO: uncomment out everything
 
 void ControlLoopMode::execute(AttitudeManager* attMgr) {
-	 SFOutput_t *SF_output = SensorFusionMode::getSFOutput();
+	SFOutput_t *SF_output = SensorFusionMode::getSFOutput();
 
 	PID_Output_t *pid_out = nullptr;
 
