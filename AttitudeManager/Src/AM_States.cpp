@@ -17,6 +17,7 @@
 #include "../../Controls/Inc/PID.hpp"
 #include "../../Drivers/Comms/Inc/RSSI.hpp"
 #include "../../Controls/Inc/Controls.hpp"
+#include "../Inc/AM_OutputMixing.hpp"
 /*
  * Definitions
  */
@@ -156,8 +157,15 @@ AttitudeState& ControlLoopMode::getInstance(){
 void OutputMixingMode::execute(AttitudeManager * attMgr) {
 	PID_Output_t * PIDOutput = ControlLoopMode::getPIDOutput();
 
+	OutputMixing_error_t  ErrorStruct = OutputMixing_Execute(PIDOutput, _channel_out);
+
+	if (ErrorStruct.errorCode == 0) {
+		attMgr->output->set(PIDOutput);
+	} else {
+		attMgr->setState(FetchInstructionsMode::getInstance());
+	}
 	// match types?
-	attMgr->output->set(PIDOutput);
+	//attMgr->output->set(PIDOutput);
 }
 
 AttitudeState& OutputMixingMode::getInstance()
@@ -217,7 +225,7 @@ void DisarmMode::execute(AttitudeManager* attMgr)
              2. Go into fetchInstructionsMode bec "Arm" instruction was sent
              3. Do nothing, stay in the disarm state
         */
-    if(_arm_disarm_timeout_count > TIMEOUT_THRESHOLD && CommsFailed()) // && CommsFailed() Add this back
+    if(_arm_disarm_timeout_count > TIMEOUT_THRESHOLD && CommsFailed())
     {
         //Abort due to timeout failures
         attMgr->setState(FatalFailureMode::getInstance());
