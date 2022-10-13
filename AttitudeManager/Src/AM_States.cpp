@@ -80,15 +80,10 @@ AttitudeState& FetchInstructionsMode::getInstance() {
 }
 
 bool FetchInstructionsMode::receiveTeleopInstructions(AttitudeManager *attMgr) {
-	//bool is_dc{true};
 
 	if(attMgr->link->disconnected(HAL_GetTick())) {
 		return false;
 	}
-
-	/*if (is_dc) {
-		return false;
-	}*/
 
 	for(int i=0; i<MAX_CHANNEL; ++i) {
 		_teleop_instructions.teleop_inp[i] = attMgr->link->get_input(i);
@@ -97,9 +92,12 @@ bool FetchInstructionsMode::receiveTeleopInstructions(AttitudeManager *attMgr) {
 }
 
 bool FetchInstructionsMode::isArmed() {
+
 	bool retval = false;
+
 	if(_teleop_instructions.is_armed >= MIN_ARM_VALUE) {
 		retval = true;
+
 	}
 	return retval;
 }
@@ -134,7 +132,7 @@ void ControlLoopMode::execute(AttitudeManager* attMgr) {
 	PID_Output_t *pid_out = nullptr;
 
 	if(FetchInstructionsMode::isAutonomous()) {
-
+		//Add PM instructions here
 	}else {
 		Teleop_Instructions_t *_teleop_instructions = FetchInstructionsMode::getTeleopInstructions();
 		//_pid_output = runControlsAndGetPWM(_teleop_instructions, SF_output);
@@ -191,13 +189,15 @@ AttitudeState& FatalFailureMode::getInstance()
 void DisarmMode::execute(AttitudeManager* attMgr)
 {
     //setting PWM channel values to lowest "disarm" value
-	/* Code not up to date with current LOS status - TODO
+/*
 	attMgr->pwm->set(FRONT_LEFT_MOTOR_CHANNEL, 0);
 	attMgr->pwm->set(FRONT_RIGHT_MOTOR_CHANNEL, 0);
 	attMgr->pwm->set(BACK_LEFT_MOTOR_CHANNEL, 0);
 	attMgr->pwm->set(BACK_RIGHT_MOTOR_CHANNEL, 0);
 */
+
 	attMgr->setState(FatalFailureMode::getInstance());
+
 
     const uint8_t TIMEOUT_THRESHOLD = 2; //Max cycles without data until connection is considered broken
 
@@ -218,7 +218,7 @@ void DisarmMode::execute(AttitudeManager* attMgr)
              2. Go into fetchInstructionsMode bec "Arm" instruction was sent
              3. Do nothing, stay in the disarm state
         */
-    if(_arm_disarm_timeout_count > TIMEOUT_THRESHOLD ) // && CommsFailed() Add this back
+    if(_arm_disarm_timeout_count > TIMEOUT_THRESHOLD && CommsFailed()) // && CommsFailed() Add this back
     {
         //Abort due to timeout failures
         attMgr->setState(FatalFailureMode::getInstance());
@@ -231,7 +231,7 @@ void DisarmMode::execute(AttitudeManager* attMgr)
     else
     {
         //Do nothing, stay in this state
-        attMgr->setState(DisarmMode::getInstance());
+        //attMgr->setState(DisarmMode::getInstance());
     }
 
 
@@ -247,7 +247,7 @@ bool DisarmMode::ReceieveArmDisarmInstruction(AttitudeManager *attMgr)
 {
     // Code not up to date with current LOS status - TODO
 	bool retVal = true;
-    //if(attMgr->link->is_disconnected(HAL_GetTick()))
+    if(attMgr->link->disconnected(HAL_GetTick()))
     {
         retVal = false;
     }
@@ -261,7 +261,7 @@ bool DisarmMode::ReceieveArmDisarmInstruction(AttitudeManager *attMgr)
 bool DisarmMode::isArmed()
 {
     bool retVal = false;
-    // Code not up to date with current LOS status - TODO
+
     if (_arm_disarm_ppm_val >= MIN_ARM_VALUE)
     {
         retVal = true;
