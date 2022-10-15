@@ -135,7 +135,14 @@ void ControlLoopMode::execute(AttitudeManager* attMgr) {
 		//Add PM instructions here
 	}else {
 		Teleop_Instructions_t *_teleop_instructions = FetchInstructionsMode::getTeleopInstructions();
-		//_pid_output = runControlsAndGetPWM(_teleop_instructions, SF_output);
+		struct Instructions_t controller_val;
+
+		controller_val.input1 = _teleop_instructions->roll;
+		controller_val.input2 = _teleop_instructions->pitch;
+		controller_val.input3 = _teleop_instructions->yaw;
+		controller_val.input4 = (*_teleop_instructions).throttle;
+
+		_pid_output = runControlsAndGetPWM(&controller_val, SF_output);
 		//TODO: fix above
 	}
 
