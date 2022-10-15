@@ -6,7 +6,7 @@
  */
 
 #ifndef PID_HPP_
-#define PID_HPP
+#define PID_HPP_
 
 #include <cmath>
 #include <cstdint>

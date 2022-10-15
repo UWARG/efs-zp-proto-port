@@ -25,6 +25,4 @@ void AM_interfaceInit(void) {
 
 void AM_interfaceExecute(void) {
 	attMng->execute();
-	//int x = 5;
-	//int y = x + 5;
 }
