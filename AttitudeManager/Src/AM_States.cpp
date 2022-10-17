@@ -65,14 +65,14 @@ void FetchInstructionsMode::execute(AttitudeManager * attMgr) {
 		// abort due to teleop failure
 		attMgr->setState(FatalFailureMode::getInstance());
 		return;
-
+	}
 	//Check if Disarm instruction was sent
-	if (!isArmed()) {
-		attMgr->setState(DisarmMode::getInstance());
-		return;
-	}
+//	if (!isArmed()) {
+//		attMgr->setState(DisarmMode::getInstance());
+//		return;
+//	}
 	attMgr->setState(SensorFusionMode::getInstance());
-	}
+
 }
 
 AttitudeState& FetchInstructionsMode::getInstance() {
@@ -135,7 +135,19 @@ void ControlLoopMode::execute(AttitudeManager* attMgr) {
 		//Add PM instructions here
 	}else {
 		Teleop_Instructions_t *_teleop_instructions = FetchInstructionsMode::getTeleopInstructions();
-		//_pid_output = runControlsAndGetPWM(_teleop_instructions, SF_output);
+		struct Instructions_t controller_val;
+
+//				controller_val.input1 = _teleop_instructions->roll;
+//				controller_val.input2 = _teleop_instructions->pitch;
+//				controller_val.input3 = _teleop_instructions->yaw;
+//				controller_val.input4 = (*_teleop_instructions).throttle;
+				controller_val.input1 = 50;
+				controller_val.input2 = 50;
+				controller_val.input3 = 50;
+				controller_val.input4 = 50;
+				PID_Output_t *_pid_output = runControlsAndGetPWM(&controller_val, SF_output);
+		HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
+			  HAL_Delay(10);
 		//TODO: fix above
 	}
 
@@ -156,12 +168,29 @@ AttitudeState& ControlLoopMode::getInstance(){
 
 
 void OutputMixingMode::execute(AttitudeManager * attMgr) {
+//	attMgr->setState(ControlLoopMode::getInstance());
 	PID_Output_t * PIDOutput = ControlLoopMode::getPIDOutput();
 
 	OutputMixing_error_t  ErrorStruct = OutputMixing_Execute(PIDOutput, _channel_out);
 
+
+
 	if (ErrorStruct.errorCode == 0) {
-		attMgr->output->set(PIDOutput);
+		static int value;
+		value += 1;
+		if (value >= 100) {
+			value = 0;
+		}
+//		attMgr->output->set(PIDOutput);
+
+//		attMgr->output->set(4, value);
+//		attMgr->output->set(5, value);
+//		attMgr->output->set(6, value);
+//		attMgr->output->set(7, value);
+		attMgr->output->set(4, PIDOutput->frontLeftMotorPercent);
+		attMgr->output->set(5, PIDOutput->frontRightMotorPercent);
+		attMgr->output->set(6, PIDOutput->backLeftMotorPercent);
+		attMgr->output->set(7, PIDOutput->backRightMotorPercent);
 	} else {
 		attMgr->setState(FetchInstructionsMode::getInstance());
 	}
@@ -197,14 +226,14 @@ AttitudeState& FatalFailureMode::getInstance()
 void DisarmMode::execute(AttitudeManager* attMgr)
 {
     //setting PWM channel values to lowest "disarm" value
-/*
-	attMgr->pwm->set(FRONT_LEFT_MOTOR_CHANNEL, 0);
-	attMgr->pwm->set(FRONT_RIGHT_MOTOR_CHANNEL, 0);
-	attMgr->pwm->set(BACK_LEFT_MOTOR_CHANNEL, 0);
-	attMgr->pwm->set(BACK_RIGHT_MOTOR_CHANNEL, 0);
-*/
+//
+//	attMgr->pwm->set(FRONT_LEFT_MOTOR_CHANNEL, 0);
+//	attMgr->pwm->set(FRONT_RIGHT_MOTOR_CHANNEL, 0);
+//	attMgr->pwm->set(BACK_LEFT_MOTOR_CHANNEL, 0);
+//	attMgr->pwm->set(BACK_RIGHT_MOTOR_CHANNEL, 0);
 
-	attMgr->setState(FatalFailureMode::getInstance());
+
+//	attMgr->setState(FatalFailureMode::getInstance());
 
 
     const uint8_t TIMEOUT_THRESHOLD = 2; //Max cycles without data until connection is considered broken

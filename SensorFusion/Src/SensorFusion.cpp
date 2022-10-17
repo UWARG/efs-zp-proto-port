@@ -569,8 +569,9 @@ SFError_t SF_GenerateNewResult() {
 	SFError.errorCode = 0;
 
 	IMUData_t imuData;
-	IMU& imuObj = BMX160::getInstance();
-	imuObj.GetResult(imuData);
+	IMU *imuObj;
+	imuObj = &BMX160::getInstance();
+	imuObj->GetResult(imuData);
 #ifdef AUTOPILOT
     GpsData_t GpsData;
     AltimeterData_t altimeterData;
