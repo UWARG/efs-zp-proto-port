@@ -137,15 +137,15 @@ void ControlLoopMode::execute(AttitudeManager* attMgr) {
 		Teleop_Instructions_t *_teleop_instructions = FetchInstructionsMode::getTeleopInstructions();
 		struct Instructions_t controller_val;
 
-//				controller_val.input1 = _teleop_instructions->roll;
-//				controller_val.input2 = _teleop_instructions->pitch;
-//				controller_val.input3 = _teleop_instructions->yaw;
-//				controller_val.input4 = (*_teleop_instructions).throttle;
-				controller_val.input1 = 50;
-				controller_val.input2 = 50;
-				controller_val.input3 = 50;
-				controller_val.input4 = 50;
-				PID_Output_t *_pid_output = runControlsAndGetPWM(&controller_val, SF_output);
+				controller_val.input1 = _teleop_instructions->roll;
+				controller_val.input2 = _teleop_instructions->pitch;
+				controller_val.input3 = _teleop_instructions->yaw;
+				controller_val.input4 = (*_teleop_instructions).throttle;
+//		controller_val.input1 = 0.5;
+//		controller_val.input2 = 0.5;
+//		controller_val.input3 = 0.5;
+//		controller_val.input4 = 0.5;
+		PID_Output_t *_pid_output = runControlsAndGetPWM(&controller_val, SF_output);
 		HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
 			  HAL_Delay(10);
 		//TODO: fix above
@@ -196,6 +196,7 @@ void OutputMixingMode::execute(AttitudeManager * attMgr) {
 	}
 	// match types?
 	//attMgr->output->set(PIDOutput);
+	attMgr->setState(FetchInstructionsMode::getInstance());
 }
 
 AttitudeState& OutputMixingMode::getInstance()
