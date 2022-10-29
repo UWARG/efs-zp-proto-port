@@ -31,7 +31,7 @@
  **********************************************************************************************************************/
 
 static SFOutput_t curr_sf;  // current
-static PID_Output_t PID_Out;
+static PID_Output_t PID_Out = {0};
 
 // =======================================================
 // PID consts
@@ -72,6 +72,7 @@ const int PID_method = 0;
  * Code
  **********************************************************************************************************************/
 
+
 PID_Output_t *runControlsAndGetPWM(Instructions_t *instructions, SFOutput_t *SF_pos) {
   // to use or not to use pointers?
   curr_sf = *SF_pos;
@@ -102,5 +103,8 @@ PID_Output_t *runControlsAndGetPWM(Instructions_t *instructions, SFOutput_t *SF_
   PID_Out.frontLeftMotorPercent  = throttle - roll + pitch + yaw;
   PID_Out.backRightMotorPercent  = throttle + roll - pitch + yaw;
   PID_Out.frontRightMotorPercent = throttle + roll + pitch - yaw;
+
+  PID_Output_t* output_pointer = &PID_Out;
+  //assert(&PID_Out);
   return &PID_Out;
 }

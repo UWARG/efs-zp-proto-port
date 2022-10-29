@@ -38,6 +38,12 @@ uint8_t MAX_CHANNEL = 8;
 uint8_t TIMEOUT_THRESHOLD = 2;
 uint8_t MIN_ARM_VALUE = 50;
 
+const uint8_t ROLLINDEX = 0;
+const uint8_t PITCHINDEX = 1;
+const uint8_t THROTTLEINDEX = 2;
+const uint8_t YAWINDEX = 3;
+
+
 /*
  * Code
  */
@@ -136,19 +142,29 @@ void ControlLoopMode::execute(AttitudeManager* attMgr) {
 	}else {
 		Teleop_Instructions_t *_teleop_instructions = FetchInstructionsMode::getTeleopInstructions();
 		struct Instructions_t controller_val;
+		//teleop_inp[2] is for throttle
+		_teleop_instructions -> throttle = (uint8_t)_teleop_instructions -> teleop_inp[THROTTLEINDEX];
+		_teleop_instructions -> yaw = (uint8_t)_teleop_instructions -> teleop_inp[YAWINDEX];
+		_teleop_instructions -> pitch = (uint8_t)_teleop_instructions -> teleop_inp[PITCHINDEX];
+		_teleop_instructions -> roll = (uint8_t)_teleop_instructions -> teleop_inp[ROLLINDEX];
 
-				controller_val.input1 = _teleop_instructions->roll;
-				controller_val.input2 = _teleop_instructions->pitch;
-				controller_val.input3 = _teleop_instructions->yaw;
-				controller_val.input4 = (*_teleop_instructions).throttle;
+		controller_val.input1 = _teleop_instructions->roll;
+		controller_val.input2 = _teleop_instructions->pitch;
+		controller_val.input3 = _teleop_instructions->yaw;
+		controller_val.input4 = _teleop_instructions -> throttle;
+
 //		controller_val.input1 = 0.5;
 //		controller_val.input2 = 0.5;
 //		controller_val.input3 = 0.5;
 //		controller_val.input4 = 0.5;
-		PID_Output_t *_pid_output = runControlsAndGetPWM(&controller_val, SF_output);
-		HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
-			  HAL_Delay(10);
+		volatile PID_Output_t* pid_output = runControlsAndGetPWM(&controller_val, SF_output);
+		volatile uint8_t remove=0;
+		//HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
+		//HAL_Delay(500);
+		//HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
+		//HAL_Delay(500);
 		//TODO: fix above
+		//attMgr->setState(OutputMixingMode::getInstance());
 	}
 
 	attMgr->setState(OutputMixingMode::getInstance());
@@ -187,10 +203,10 @@ void OutputMixingMode::execute(AttitudeManager * attMgr) {
 //		attMgr->output->set(5, value);
 //		attMgr->output->set(6, value);
 //		attMgr->output->set(7, value);
-		attMgr->output->set(4, PIDOutput->frontLeftMotorPercent);
-		attMgr->output->set(5, PIDOutput->frontRightMotorPercent);
-		attMgr->output->set(6, PIDOutput->backLeftMotorPercent);
-		attMgr->output->set(7, PIDOutput->backRightMotorPercent);
+		attMgr->output->set(0, PIDOutput->frontLeftMotorPercent);
+		attMgr->output->set(1, PIDOutput->frontRightMotorPercent);
+		attMgr->output->set(2, PIDOutput->backLeftMotorPercent);
+		attMgr->output->set(3, PIDOutput->backRightMotorPercent);
 	} else {
 		attMgr->setState(FetchInstructionsMode::getInstance());
 	}
