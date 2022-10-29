@@ -157,8 +157,8 @@ void ControlLoopMode::execute(AttitudeManager* attMgr) {
 //		controller_val.input2 = 0.5;
 //		controller_val.input3 = 0.5;
 //		controller_val.input4 = 0.5;
-		volatile PID_Output_t* pid_output = runControlsAndGetPWM(&controller_val, SF_output);
-		volatile uint8_t remove=0;
+		 this->_pid_output = runControlsAndGetPWM(&controller_val, SF_output);
+		//volatile uint8_t remove=0;
 		//HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
 		//HAL_Delay(500);
 		//HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
@@ -203,10 +203,10 @@ void OutputMixingMode::execute(AttitudeManager * attMgr) {
 //		attMgr->output->set(5, value);
 //		attMgr->output->set(6, value);
 //		attMgr->output->set(7, value);
-		attMgr->output->set(0, PIDOutput->frontLeftMotorPercent);
-		attMgr->output->set(1, PIDOutput->frontRightMotorPercent);
-		attMgr->output->set(2, PIDOutput->backLeftMotorPercent);
-		attMgr->output->set(3, PIDOutput->backRightMotorPercent);
+		attMgr->output->set(4, PIDOutput->frontLeftMotorPercent);
+		attMgr->output->set(5, PIDOutput->frontRightMotorPercent);
+		attMgr->output->set(6, PIDOutput->backLeftMotorPercent);
+		attMgr->output->set(7, PIDOutput->backRightMotorPercent);
 	} else {
 		attMgr->setState(FetchInstructionsMode::getInstance());
 	}
