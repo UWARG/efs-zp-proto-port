@@ -42,6 +42,10 @@ const uint8_t ROLLINDEX = 0;
 const uint8_t PITCHINDEX = 1;
 const uint8_t THROTTLEINDEX = 2;
 const uint8_t YAWINDEX = 3;
+static SFOutput_t* test_bmx_work;
+bool flag_test = true;
+
+static float test_data = 1.0;
 
 
 /*
@@ -157,7 +161,14 @@ void ControlLoopMode::execute(AttitudeManager* attMgr) {
 //		controller_val.input2 = 0.5;
 //		controller_val.input3 = 0.5;
 //		controller_val.input4 = 0.5;
+		if (SF_output != test_bmx_work) {
+			HAL_GPIO_TogglePin (LD2_GPIO_Port, LD2_Pin);
+		} else {
+			//HAL_GPIO_
+		}
 		 this->_pid_output = runControlsAndGetPWM(&controller_val, SF_output);
+
+
 		//volatile uint8_t remove=0;
 		//HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
 		//HAL_Delay(500);
@@ -186,6 +197,17 @@ AttitudeState& ControlLoopMode::getInstance(){
 void OutputMixingMode::execute(AttitudeManager * attMgr) {
 //	attMgr->setState(ControlLoopMode::getInstance());
 	PID_Output_t * PIDOutput = ControlLoopMode::getPIDOutput();
+
+	test_data = 30;
+
+	PIDOutput->frontLeftMotorPercent = test_data;
+    PIDOutput->frontRightMotorPercent = test_data;
+    PIDOutput->backLeftMotorPercent = test_data;
+    PIDOutput->backRightMotorPercent = test_data;
+
+    //OutputMixing::_channel_out = {0, 1, 2, 3};
+
+    //test_data += 1.0;
 
 	OutputMixing_error_t  ErrorStruct = OutputMixing_Execute(PIDOutput, _channel_out);
 
